@@ -1,0 +1,17 @@
+{
+  "name": "tienda-ropa-virtual",
+  "version": "1.0.0",
+  "description": "Una tienda de ropa virtual con funcionalidades extra como un maniqui #D y algoritmos que te ayudan a elegir ropa",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv-cli": "^10.0.0"
+  }
+}
