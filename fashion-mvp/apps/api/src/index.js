@@ -12,11 +12,13 @@ import path from 'path';
 import { uploadsRouter } from './routes/uploads.js';
 import { authRouter } from './routes/auth.js';
 
-
+const cookieParser = require('cookie-parser');
 const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.use('/api/health', healthRouter);
 app.use('/api/products', productsRouter);
@@ -24,6 +26,11 @@ app.use('/api', variantsRouter);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api', uploadsRouter);
 app.use('/api', authRouter);
+app.use('/api/categories', require('./routes/categories'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/auth', require('./routes/auth.refresh'));
+app.use('/api/password', require('./routes/password.reset'));
+
 
 const port = process.env.PORT || 3000;
 
