@@ -15,6 +15,7 @@ Product.init(
     category: { type: DataTypes.STRING(50), allowNull: false }, // top/bottom/shoes/accessory
     material: { type: DataTypes.STRING(80), allowNull: true },
     is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+    image_url: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, tableName: 'products', timestamps: true }
 );

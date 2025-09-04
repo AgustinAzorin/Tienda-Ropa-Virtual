@@ -6,7 +6,12 @@ import cors from 'cors';
 import healthRouter from './routes/health.js';
 import { productsRouter } from './routes/products.js';
 import { syncDB } from './startup/sync.js';
+import { variantsRouter } from './routes/variants.js';
 dotenv.config({ path: '../../.env' }); // carga el .env de la raíz
+import path from 'path';
+import { uploadsRouter } from './routes/uploads.js';
+import { authRouter } from './routes/auth.js';
+
 
 const app = express();
 app.use(helmet());
@@ -15,7 +20,10 @@ app.use(express.json());
 
 app.use('/api/health', healthRouter);
 app.use('/api/products', productsRouter);
-
+app.use('/api', variantsRouter);
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/api', uploadsRouter);
+app.use('/api', authRouter);
 
 const port = process.env.PORT || 3000;
 

@@ -9,13 +9,14 @@ import {
   ProductQuerySchema,
   IdParamSchema
 } from '../schemas/productSchemas.js';
+import { requireAuth, requireRole } from '../middlewares/auth.js';
 
 export const productsRouter = Router();
 
 /**
  * POST /api/products
  */
-productsRouter.post('/', async (req, res, next) => {
+productsRouter.post('/',  requireAuth, requireRole('seller', 'admin'), async (req, res, next) => {
   try {
     const data = ProductCreateSchema.parse(req.body);
 

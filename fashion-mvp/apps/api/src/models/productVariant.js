@@ -12,6 +12,7 @@ ProductVariant.init(
     color_hex: { type: DataTypes.STRING(7), allowNull: true },
     stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     price: { type: DataTypes.INTEGER, allowNull: false }, // centavos (int)
+    image_url: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, tableName: 'product_variants', timestamps: true }
 );
