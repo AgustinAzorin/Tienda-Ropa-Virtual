@@ -19,6 +19,15 @@ app.use('/api/products', productsRouter);
 
 const port = process.env.PORT || 3000;
 
+console.log('[DB CFG]', {
+  user: process.env.POSTGRES_USER,
+  db: process.env.POSTGRES_DB,
+  host: process.env.POSTGRES_HOST,
+  port: process.env.POSTGRES_PORT,
+  pw_len: process.env.POSTGRES_PASSWORD?.length // no muestra la clave
+});
+
+
 syncDB()
   .then(() => {
     app.listen(port, () => console.log(`API listening on ${port}`));
@@ -27,3 +36,4 @@ syncDB()
     console.error('DB init error:', err);
     process.exit(1);
   });
+
