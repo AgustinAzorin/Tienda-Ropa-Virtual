@@ -1,5 +1,7 @@
-const router = require('express').Router();
-const { models } = require('../db/sequelize');
+import { Router } from 'express';
+import { models } from '../models/registry.js';
+
+const router = Router();
 
 router.post('/', async (req, res, next) => {
   try { res.json(await models.Tag.create({ name: req.body.name })); }
@@ -16,10 +18,10 @@ router.post('/:productId/attach', async (req, res, next) => {
     const { tagIds } = req.body; // [1,2,3]
     const p = await models.Product.findByPk(req.params.productId);
     if (!p) return res.status(404).json({ error: 'not_found' });
-    await p.setTags(tagIds); // reemplaza; usa addTags si querés acumular
+    await p.setTags(tagIds); // requiere asociar Product<->Tag via ProductTag
     const full = await models.Product.findByPk(p.id, { include: [{ model: models.Tag, as: 'tags' }] });
     res.json(full);
   } catch (e) { next(e); }
 });
 
-module.exports = router;
+export default router;

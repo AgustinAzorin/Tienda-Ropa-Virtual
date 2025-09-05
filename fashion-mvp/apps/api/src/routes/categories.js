@@ -1,6 +1,7 @@
-// apps/api/src/routes/categories.js
-const router = require('express').Router();
-const { models } = require('../db/sequelize');
+import { Router } from 'express';
+import { models } from '../models/registry.js';
+
+const router = Router();
 
 router.post('/', async (req, res, next) => {
   try { const cat = await models.Category.create(req.body); res.json(cat); }
@@ -12,4 +13,4 @@ router.get('/', async (_req, res, next) => {
   catch (e) { next(e); }
 });
 
-module.exports = router;
+export default router;

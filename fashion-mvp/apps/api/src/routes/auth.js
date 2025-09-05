@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.js';
 import { RegisterSchema, LoginSchema } from '../schemas/authSchemas.js';
@@ -74,3 +74,5 @@ authRouter.get('/auth/me', (req, res) => {
     return res.status(401).json({ error: 'Invalid token' });
   }
 });
+
+export default authRouter;

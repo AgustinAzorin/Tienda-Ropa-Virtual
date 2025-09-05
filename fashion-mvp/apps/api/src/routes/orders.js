@@ -1,6 +1,7 @@
-// apps/api/src/routes/orders.js
-const router = require('express').Router();
-const { models, sequelize } = require('../db/sequelize');
+import { Router } from 'express';
+import { sequelize, models } from '../models/registry.js';
+
+const router = Router();
 
 router.post('/', async (req, res, next) => {
   const { userId, items } = req.body; // items: [{ variantId, quantity, price }]
@@ -38,4 +39,4 @@ router.get('/:id', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-module.exports = router;
+export default router;

@@ -1,9 +1,10 @@
-const router = require('express').Router();
-const bcrypt = require('bcryptjs');
-const { models } = require('../db/sequelize');
-const { signAccessJwt, genRefreshToken, hashToken, REFRESH_TTL_DAYS } = require('../utils/tokens');
+import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import { models } from '../models/registry.js';
+import { signAccessJwt, genRefreshToken, hashToken, REFRESH_TTL_DAYS } from '../utils/tokens.js';
 
-// helper cookie
+const router = Router();
+
 function setRefreshCookie(res, raw) {
   res.cookie('rt', raw, {
     httpOnly: true,
@@ -14,13 +15,13 @@ function setRefreshCookie(res, raw) {
   });
 }
 
-// POST /api/auth/login
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await models.User.findOne({ where: { email } });
     if (!user) return res.status(401).json({ error: 'invalid_credentials' });
-    const ok = await bcrypt.compare(password, user.passwordHash);
+
+    const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
 
     const accessToken = signAccessJwt({ sub: user.id, role: user.role });
@@ -38,7 +39,6 @@ router.post('/login', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// POST /api/auth/refresh  (rotación)
 router.post('/refresh', async (req, res, next) => {
   try {
     const rawRt = req.cookies?.rt;
@@ -49,7 +49,6 @@ router.post('/refresh', async (req, res, next) => {
       order: [['createdAt', 'DESC']], limit: 5
     });
 
-    // buscar match
     let match = null;
     for (const t of tokens) {
       if (!t.revokedAt && t.expiresAt > new Date()) {
@@ -59,10 +58,8 @@ router.post('/refresh', async (req, res, next) => {
     }
     if (!match) return res.status(401).json({ error: 'invalid_refresh' });
 
-    // rotar: revoco el usado
     await match.update({ revokedAt: new Date() });
 
-    // emito nuevo par
     const user = await models.User.findByPk(match.userId);
     const accessToken = signAccessJwt({ sub: user.id, role: user.role });
     const newRaw = genRefreshToken();
@@ -79,14 +76,13 @@ router.post('/refresh', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// POST /api/auth/logout
 router.post('/logout', async (req, res, next) => {
   try {
     const rawRt = req.cookies?.rt;
     if (rawRt) {
       const all = await models.RefreshToken.findAll({ order: [['createdAt','DESC']], limit: 10 });
       for (const t of all) {
-        const ok = await require('bcryptjs').compare(rawRt, t.tokenHash);
+        const ok = await bcrypt.compare(rawRt, t.tokenHash);
         if (ok) await t.update({ revokedAt: new Date() });
       }
     }
@@ -95,4 +91,4 @@ router.post('/logout', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-module.exports = router;
+export default router;
