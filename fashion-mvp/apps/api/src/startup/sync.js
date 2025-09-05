@@ -1,16 +1,5 @@
-import { sequelize } from '../db/sequelize.js';
-
-// modelos base
-import '../models/product.js';
-import '../models/productVariant.js';
-import '../models/user.js';
-import '../models/category.js';
-import '../models/order.js';
-import '../models/orderItem.js';
-import '../models/tag.js';
-import '../models/productTag.js';
-import '../models/refreshToken.js';
-import '../models/passwordResetToken.js';
+// src/startup/sync.js
+import { sequelize } from '../models/registry.js'; // <-- único import que además ejecuta associate()
 
 export async function syncDB() {
   await sequelize.authenticate();

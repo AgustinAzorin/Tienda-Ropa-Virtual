@@ -1,12 +1,25 @@
-// apps/api/src/models/user.js
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../db/sequelize.js';
 
 export class User extends Model {
   static associate(models) {
+    // Órdenes
     User.hasMany(models.Order, { foreignKey: 'userId', as: 'orders' });
+
+    // Tokens
     User.hasMany(models.RefreshToken, { foreignKey: 'userId', as: 'refreshTokens' });
     User.hasMany(models.PasswordResetToken, { foreignKey: 'userId', as: 'resetTokens' });
+
+    // Carrito 1:1
+    User.hasOne(models.Cart, { foreignKey: 'userId', as: 'cart' });
+
+    // Favoritos N:M
+    User.belongsToMany(models.Product, {
+      through: models.Favorite,
+      foreignKey: 'userId',
+      otherKey: 'productId',
+      as: 'favorites',
+    });
   }
 }
 

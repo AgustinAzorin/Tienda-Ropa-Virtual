@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { Product } from '../models/product.js';
-import { ProductVariant } from '../models/productVariant.js';
+import { models } from '../models/registry.js';
 import { z } from 'zod';
 import { Op } from 'sequelize';
 import {
@@ -13,9 +12,7 @@ import { requireAuth, requireRole } from '../middlewares/auth.js';
 
 export const productsRouter = Router();
 
-/**
- * POST /api/products
- */
+/** POST /api/products */
 productsRouter.post(
   '/',
   requireAuth,
@@ -24,12 +21,13 @@ productsRouter.post(
     try {
       const data = ProductCreateSchema.parse(req.body);
 
-      const product = await Product.create(
+      const product = await models.Product.create(
         {
           ...data,
+          // no anides el array: debe ser [] o [obj,...], NO [ [] ]
           variants: Array.isArray(data.variants) ? data.variants : [],
         },
-        { include: [{ model: ProductVariant, as: 'variants' }] }
+        { include: [{ model: models.ProductVariant, as: 'variants' }] }
       );
 
       res.status(201).json(product);
@@ -42,9 +40,7 @@ productsRouter.post(
   }
 );
 
-/**
- * GET /api/products
- */
+/** GET /api/products */
 productsRouter.get('/', async (req, res, next) => {
   try {
     const { page, limit, category, style, season, q } =
@@ -59,9 +55,9 @@ productsRouter.get('/', async (req, res, next) => {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const offset = (page - 1) * safeLimit;
 
-    const { rows, count } = await Product.findAndCountAll({
+    const { rows, count } = await models.Product.findAndCountAll({
       where,
-      include: [{ model: ProductVariant, as: 'variants' }],
+      include: [{ model: models.ProductVariant, as: 'variants' }],
       offset,
       limit: safeLimit,
       order: [['createdAt', 'DESC']],
@@ -76,15 +72,13 @@ productsRouter.get('/', async (req, res, next) => {
   }
 });
 
-/**
- * GET /api/products/:id
- */
+/** GET /api/products/:id */
 productsRouter.get('/:id', async (req, res, next) => {
   try {
     const { id } = IdParamSchema.parse(req.params);
 
-    const product = await Product.findByPk(id, {
-      include: [{ model: ProductVariant, as: 'variants' }],
+    const product = await models.Product.findByPk(id, {
+      include: [{ model: models.ProductVariant, as: 'variants' }],
     });
     if (!product) return res.status(404).json({ error: 'Not found' });
     res.json(product);
@@ -96,20 +90,18 @@ productsRouter.get('/:id', async (req, res, next) => {
   }
 });
 
-/**
- * PUT /api/products/:id
- */
+/** PUT /api/products/:id */
 productsRouter.put(
   '/:id',
   requireAuth,
   requireRole('seller', 'admin'),
   async (req, res, next) => {
-    const t = await Product.sequelize.transaction();
+    const t = await models.Product.sequelize.transaction();
     try {
       const { id } = IdParamSchema.parse(req.params);
       const data = ProductUpdateSchema.parse(req.body);
 
-      const product = await Product.findByPk(id, { transaction: t });
+      const product = await models.Product.findByPk(id, { transaction: t });
       if (!product) {
         await t.rollback();
         return res.status(404).json({ error: 'Not found' });
@@ -119,21 +111,21 @@ productsRouter.put(
       await product.update(fields, { transaction: t });
 
       if (Array.isArray(variants)) {
-        await ProductVariant.destroy({ where: { product_id: product.id }, transaction: t });
+        await models.ProductVariant.destroy({ where: { product_id: product.id }, transaction: t });
         for (const v of variants) {
           const vv = z.object({
             size: z.string().min(1),
             color_hex: z.string().regex(/^#([0-9a-fA-F]{6})$/).optional(),
             stock: z.number().int().min(0).default(0),
-            price: z.number().int().min(0), // usar decimal si cambiás modelo
+            price: z.number().int().min(0), // si migrás a DECIMAL, cambiá schema/modelo
           }).parse(v);
-          await ProductVariant.create({ ...vv, product_id: product.id }, { transaction: t });
+          await models.ProductVariant.create({ ...vv, product_id: product.id }, { transaction: t });
         }
       }
 
       await t.commit();
-      const fresh = await Product.findByPk(product.id, {
-        include: [{ model: ProductVariant, as: 'variants' }],
+      const fresh = await models.Product.findByPk(product.id, {
+        include: [{ model: models.ProductVariant, as: 'variants' }],
       });
       res.json(fresh);
     } catch (err) {
@@ -146,9 +138,7 @@ productsRouter.put(
   }
 );
 
-/**
- * DELETE /api/products/:id
- */
+/** DELETE /api/products/:id */
 productsRouter.delete(
   '/:id',
   requireAuth,
@@ -156,7 +146,7 @@ productsRouter.delete(
   async (req, res, next) => {
     try {
       const { id } = IdParamSchema.parse(req.params);
-      const product = await Product.findByPk(id);
+      const product = await models.Product.findByPk(id);
       if (!product) return res.status(404).json({ error: 'Not found' });
 
       await product.update({ is_active: false });

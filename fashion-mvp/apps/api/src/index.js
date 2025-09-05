@@ -16,6 +16,8 @@ import ordersRouter from './routes/orders.js';
 import authRefreshRouter from './routes/auth.refresh.js';
 import passwordRouter from './routes/password.reset.js';
 import { syncDB } from './startup/sync.js';
+import cartsRouter from './routes/carts.js';
+import favoritesRouter from './routes/favorites.js';
 
 dotenv.config({ path: '../../.env' }); // carga .env desde la raíz
 
@@ -35,6 +37,8 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/auth', authRefreshRouter);
 app.use('/api/password', passwordRouter);
+app.use('/api/carts', cartsRouter);
+app.use('/api/favorites', favoritesRouter);
 
 const port = process.env.PORT || 3000;
 

@@ -1,6 +1,5 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../db/sequelize.js';
-import { Product } from './product.js';
 
 export class ProductVariant extends Model {}
 
@@ -17,5 +16,4 @@ ProductVariant.init(
   { sequelize, tableName: 'product_variants', timestamps: true }
 );
 
-Product.hasMany(ProductVariant, { foreignKey: 'product_id', as: 'variants' });
-ProductVariant.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+// (Removed direct Product.hasMany / ProductVariant.belongsTo to avoid duplicate alias)
