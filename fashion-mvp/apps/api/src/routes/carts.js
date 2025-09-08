@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { models, sequelize } from '../models/registry.js';
 import { requireAuth } from '../middlewares/auth.js';
+import { z } from 'zod';
+import { CartItemUpsertSchema, VariantIdParamSchema } from '../schemas/cartSchemas.js';
+
 
 const router = Router();
 
@@ -15,34 +18,31 @@ router.post('/mine', requireAuth, async (req, res, next) => {
 });
 
 // Agregar ítem
+// POST /api/carts/mine/items  { variantId, quantity }
 router.post('/mine/items', requireAuth, async (req, res, next) => {
-  const t = await sequelize.transaction();
   try {
-    const { variantId, quantity } = req.body;
-    let cart = await models.Cart.findOne({ where: { userId: req.user.id }, transaction: t, lock: t.LOCK.UPDATE });
-    if (!cart) cart = await models.Cart.create({ userId: req.user.id }, { transaction: t });
+    const { variantId, quantity } = CartItemUpsertSchema.parse(req.body);
 
-    const existing = await models.CartItem.findOne({ where: { cartId: cart.id, variantId }, transaction: t, lock: t.LOCK.UPDATE });
-    if (existing) await existing.update({ quantity: existing.quantity + Number(quantity || 1) }, { transaction: t });
-    else await models.CartItem.create({ cartId: cart.id, variantId, quantity: Number(quantity || 1) }, { transaction: t });
+    let cart = await models.Cart.findOne({ where: { userId: req.user.id } });
+    if (!cart) cart = await models.Cart.create({ userId: req.user.id });
 
-    await t.commit();
-    const full = await models.Cart.findByPk(cart.id, { include: [{ model: models.CartItem, as: 'items', include: [{ model: models.ProductVariant, as: 'variant' }] }] });
-    res.json(full);
-  } catch (e) { await t.rollback(); next(e); }
+    const [item, created] = await models.CartItem.findOrCreate({
+      where: { cartId: cart.id, variantId },
+      defaults: { quantity },
+    });
+
+    if (!created) await item.update({ quantity: item.quantity + quantity });
+
+    const full = await models.Cart.findByPk(cart.id, {
+      include: [{ model: models.CartItem, as: 'items', include: [{ model: models.ProductVariant, as: 'variant' }] }],
+    });
+
+    res.status(created ? 201 : 200).json(full);
+  } catch (err) {
+    next(err);
+  }
 });
 
-// Actualizar cantidad
-router.put('/mine/items/:itemId', requireAuth, async (req, res, next) => {
-  try {
-    const item = await models.CartItem.findByPk(req.params.itemId);
-    if (!item) return res.status(404).json({ error: 'not_found' });
-    const cart = await models.Cart.findByPk(item.cartId);
-    if (cart.userId !== req.user.id) return res.status(403).json({ error: 'forbidden' });
-    await item.update({ quantity: Number(req.body.quantity) });
-    res.json(item);
-  } catch (e) { next(e); }
-});
 
 // Eliminar ítem
 router.delete('/mine/items/:itemId', requireAuth, async (req, res, next) => {

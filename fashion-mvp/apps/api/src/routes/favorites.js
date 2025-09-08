@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { models } from '../models/registry.js';
 import { requireAuth } from '../middlewares/auth.js';
+import { FavoriteParamSchema } from '../schemas/favoriteSchemas.js';
+
 
 const router = Router();
 
@@ -14,17 +16,21 @@ router.get('/mine', requireAuth, async (req, res, next) => {
 });
 
 // Agregar
+// POST /api/favorites/mine/:productId
 router.post('/mine/:productId', requireAuth, async (req, res, next) => {
   try {
-    await models.Favorite.findOrCreate({ where: { userId: req.user.id, productId: req.params.productId } });
+    const { productId } = FavoriteParamSchema.parse(req.params);
+    await models.Favorite.findOrCreate({ where: { userId: req.user.id, productId } });
     res.status(204).send();
   } catch (e) { next(e); }
 });
 
+
 // Quitar
 router.delete('/mine/:productId', requireAuth, async (req, res, next) => {
   try {
-    await models.Favorite.destroy({ where: { userId: req.user.id, productId: req.params.productId } });
+    const { productId } = FavoriteParamSchema.parse(req.params);
+    await models.Favorite.destroy({ where: { userId: req.user.id, productId } });
     res.status(204).send();
   } catch (e) { next(e); }
 });

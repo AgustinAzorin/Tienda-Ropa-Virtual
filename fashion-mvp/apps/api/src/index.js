@@ -5,6 +5,9 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import pinoHttp from 'pino-http';
+import rateLimit from 'express-rate-limit';
+import { requestId } from './middlewares/requestId.js';
 
 import healthRouter from './routes/health.js';
 import { productsRouter } from './routes/products.js';
@@ -22,15 +25,54 @@ import favoritesRouter from './routes/favorites.js';
 dotenv.config({ path: '../../.env' }); // carga .env desde la raíz
 
 const app = express();
+app.set('version', process.env.APP_VERSION || process.env.npm_package_version || 'dev');
+app.set('trust proxy', 1);
+
+// Seguridad base
 app.use(helmet());
-app.use(cors());
+
+// CORS con allowlist por env (CSV). Si no hay lista, permitir todo en dev.
+const ORIGINS = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin || ORIGINS.length === 0 || ORIGINS.includes(origin)) return cb(null, true);
+      cb(new Error('CORS not allowed'));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(cookieParser());
+app.use(requestId);
 
+// Logging estructurado
+app.use(
+  pinoHttp({
+    customProps: (req) => ({ requestId: req.id, userId: req.user?.id || null }),
+    serializers: {
+      req(req) { return { method: req.method, url: req.url, id: req.id }; },
+      res(res) { return { statusCode: res.statusCode }; },
+    },
+  })
+);
+
+// Archivos estáticos locales (dev)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Rate limit en rutas sensibles
+const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
+const max = Number(process.env.RATE_LIMIT_MAX || 100);
+const sensitiveLimiter = rateLimit({ windowMs, max, standardHeaders: true, legacyHeaders: false });
+app.use('/api/auth', sensitiveLimiter);
+app.use('/api/password', sensitiveLimiter);
+app.use('/api/uploads', sensitiveLimiter);
+
+// Rutas
 app.use('/api/health', healthRouter);
 app.use('/api/products', productsRouter);
 app.use('/api', variantsRouter);
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api', uploadsRouter);
 app.use('/api', authRouter);
 app.use('/api/categories', categoriesRouter);

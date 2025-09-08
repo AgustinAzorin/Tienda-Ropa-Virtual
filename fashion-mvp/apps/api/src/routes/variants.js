@@ -4,11 +4,13 @@ import { models } from '../models/registry.js';
 import {
   VariantCreateSchema, VariantUpdateSchema, IdParamSchema, ProductIdParamSchema
 } from '../schemas/variantSchemas.js';
+import { requireAuth, requireRole } from '../middlewares/auth.js';
+
 
 export const variantsRouter = Router();
 
 // Crear variant para un producto
-variantsRouter.post('/products/:productId/variants', async (req, res, next) => {
+variantsRouter.post('/products/:productId/variants',  requireAuth, requireRole('seller', 'admin'), async (req, res, next) => {
   try {
     const { productId } = ProductIdParamSchema.parse(req.params);
     const body = VariantCreateSchema.parse(req.body);
@@ -25,7 +27,7 @@ variantsRouter.post('/products/:productId/variants', async (req, res, next) => {
 });
 
 // Listar variants de un producto
-variantsRouter.get('/products/:productId/variants', async (req, res, next) => {
+variantsRouter.get('/products/:productId/variants', requireAuth, requireRole('seller', 'admin'), async (req, res, next) => {
   try {
     const { productId } = ProductIdParamSchema.parse(req.params);
     const product = await models.Product.findByPk(productId);
@@ -70,7 +72,7 @@ variantsRouter.put('/variants/:id', async (req, res, next) => {
 });
 
 // Eliminar un variant (físico)
-variantsRouter.delete('/variants/:id', async (req, res, next) => {
+variantsRouter.delete('/variants/:id', requireAuth, requireRole('seller', 'admin'), async (req, res, next) => {
   try {
     const { id } = IdParamSchema.parse(req.params);
     const variant = await models.ProductVariant.findByPk(id);
@@ -83,3 +85,4 @@ variantsRouter.delete('/variants/:id', async (req, res, next) => {
     next(err);
   }
 });
+

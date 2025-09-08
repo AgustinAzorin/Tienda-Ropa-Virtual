@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { models } from '../models/registry.js';
 import { z } from 'zod';
-import { Op } from 'sequelize';
 import {
   ProductCreateSchema,
   ProductUpdateSchema,
@@ -9,6 +8,8 @@ import {
   IdParamSchema
 } from '../schemas/productSchemas.js';
 import { requireAuth, requireRole } from '../middlewares/auth.js';
+import { Op, fn, col, literal } from 'sequelize';
+
 
 export const productsRouter = Router();
 
@@ -41,12 +42,15 @@ productsRouter.post(
 );
 
 /** GET /api/products */
+// GET /api/products
 productsRouter.get('/', async (req, res, next) => {
   try {
-    const { page, limit, category, style, season, q } =
-      ProductQuerySchema.parse(req.query);
-    const where = { is_active: true };
+    const {
+      page, limit, category, style, season, q,
+      minPrice, maxPrice, sort
+    } = ProductQuerySchema.parse(req.query);
 
+    const where = { is_active: true };
     if (category) where.category = category;
     if (style) where.style = style;
     if (season) where.season = season;
@@ -55,15 +59,50 @@ productsRouter.get('/', async (req, res, next) => {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const offset = (page - 1) * safeLimit;
 
-    const { rows, count } = await models.Product.findAndCountAll({
+    // include base
+    const include = [
+      { model: models.ProductImage, as: 'images' }
+    ];
+
+    // filtros/orden por precio requieren join con variants
+    const variantWhere = {};
+    let needJoin = false;
+    if (minPrice != null) { variantWhere.price = { ...(variantWhere.price||{}), [Op.gte]: minPrice }; needJoin = true; }
+    if (maxPrice != null) { variantWhere.price = { ...(variantWhere.price||{}), [Op.lte]: maxPrice }; needJoin = true; }
+
+    if (needJoin || (sort && sort !== 'newest')) {
+      include.push({
+        model: models.ProductVariant,
+        as: 'variants',
+        attributes: [],
+        required: true,
+        where: Object.keys(variantWhere).length ? variantWhere : undefined
+      });
+    } else {
+      include.push({ model: models.ProductVariant, as: 'variants' });
+    }
+
+    const attributes = { include: [[fn('MIN', col('variants.price')), 'minPrice']] };
+    const group = ['Product.id'];
+
+    let order = [['createdAt', 'DESC']];
+    if (sort === 'price_asc')  order = [literal('"minPrice" ASC NULLS LAST')];
+    if (sort === 'price_desc') order = [literal('"minPrice" DESC NULLS LAST')];
+
+    const result = await models.Product.findAndCountAll({
       where,
-      include: [{ model: models.ProductVariant, as: 'variants' }],
+      include,
+      attributes,
+      group,
       offset,
       limit: safeLimit,
-      order: [['createdAt', 'DESC']],
+      order
     });
 
-    res.json({ items: rows, total: count, page, limit: safeLimit });
+    const rows = Array.isArray(result.rows) ? result.rows : result;
+    const total = Array.isArray(result.count) ? result.count.length : result.count;
+
+    res.json({ items: rows, total, page, limit: safeLimit });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ error: 'ValidationError', issues: err.issues });
@@ -72,13 +111,19 @@ productsRouter.get('/', async (req, res, next) => {
   }
 });
 
+
+
 /** GET /api/products/:id */
+// GET /api/products/:id
 productsRouter.get('/:id', async (req, res, next) => {
   try {
     const { id } = IdParamSchema.parse(req.params);
 
     const product = await models.Product.findByPk(id, {
-      include: [{ model: models.ProductVariant, as: 'variants' }],
+      include: [
+        { model: models.ProductVariant, as: 'variants', include: [{ model: models.VariantImage, as: 'images' }] },
+        { model: models.ProductImage, as: 'images' }
+      ],
     });
     if (!product) return res.status(404).json({ error: 'Not found' });
     res.json(product);
@@ -89,6 +134,7 @@ productsRouter.get('/:id', async (req, res, next) => {
     next(err);
   }
 });
+
 
 /** PUT /api/products/:id */
 productsRouter.put(

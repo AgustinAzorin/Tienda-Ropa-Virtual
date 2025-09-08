@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -17,6 +18,16 @@ const storage = multer.diskStorage({
 export const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Formato no soportado'));
+  }
+});
+
+const memStorage = multer.memoryStorage();
+export const uploadMem = multer({
+  storage: memStorage,
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
     allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Formato no soportado'));
