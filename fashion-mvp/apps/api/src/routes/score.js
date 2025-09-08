@@ -1,27 +1,32 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import { redis, ensureRedis } from '../utils/redis.js';
+import { redis } from '../utils/redis.js';
+
+const scoreRouter = Router(); // <-- crear antes de usar
+
+// normalize SCORE_BASE_URL (quita comillas/espacios si vienen del .env)
+const SCORE_BASE_URL = String(process.env.SCORE_BASE_URL || 'http://127.0.0.1:8000').trim().replace(/^['"]|['"]$/g, '');
 
 scoreRouter.post('/outfits/score', async (req, res, next) => {
   try {
-    await ensureRedis(); // no rompe si Redis no está
     const payload = JSON.stringify(req.body || {});
     const hash = crypto.createHash('sha1').update(payload).digest('hex');
     const key = `score:${hash}`;
     const TTL = 60; // segundos
 
-    // 1) intento cache
-    const cached = await redis.get(key).catch(() => null);
+    // 1) intento cache *solo si* redis ya está ready (no forzamos conexión)
+    const cached = redis.status === 'ready' ? await redis.get(key).catch(() => null) : null;
     if (cached) {
       res.set('X-Cache', 'HIT');
       return res.json(JSON.parse(cached));
     }
 
     // 2) llamada al servicio FastAPI con timeout
+    // timeout menor que el timeout global de los tests para evitar que Vitest agote su timeout
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 4000);
 
-    const resp = await fetch(`${process.env.SCORE_BASE_URL}/score`, {
+    const resp = await fetch(`${SCORE_BASE_URL}/score`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,
@@ -39,8 +44,10 @@ scoreRouter.post('/outfits/score', async (req, res, next) => {
 
     const data = await resp.json();
 
-    // 3) guardar cache best-effort
-    await redis.setex(key, TTL, JSON.stringify(data)).catch(() => {});
+    // 3) guardar cache best-effort si redis está listo
+    if (redis.status === 'ready') {
+      await redis.setex(key, TTL, JSON.stringify(data)).catch(() => {});
+    }
 
     res.set('X-Cache', 'MISS');
     res.json(data);
@@ -52,4 +59,4 @@ scoreRouter.post('/outfits/score', async (req, res, next) => {
   }
 });
 
-export const scoreRouter = Router();
+export { scoreRouter };

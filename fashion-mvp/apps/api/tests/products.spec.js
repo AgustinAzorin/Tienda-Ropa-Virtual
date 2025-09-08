@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { describe, it, expect } from 'vitest';
 
 const BASE = process.env.TEST_BASE_URL || 'http://localhost:3000';
 

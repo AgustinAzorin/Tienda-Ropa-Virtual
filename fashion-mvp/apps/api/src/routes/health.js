@@ -2,7 +2,7 @@ import { Router } from 'express';
 const router = Router();
 
 // GET /api/health
-healthRouter.get('/', (_req, res) => {
+router.get('/', (_req, res) => {
   res.json({
     ok: true,
     now: new Date().toISOString(),
@@ -11,6 +11,5 @@ healthRouter.get('/', (_req, res) => {
     requestId: res.getHeader('X-Request-Id') || null,
   });
 });
-
 
 export default router;

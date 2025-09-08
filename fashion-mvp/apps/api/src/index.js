@@ -18,6 +18,7 @@ import categoriesRouter from './routes/categories.js';
 import ordersRouter from './routes/orders.js';
 import authRefreshRouter from './routes/auth.refresh.js';
 import passwordRouter from './routes/password.reset.js';
+import { scoreRouter } from './routes/score.js'; // <-- añadir import
 import { syncDB } from './startup/sync.js';
 import cartsRouter from './routes/carts.js';
 import favoritesRouter from './routes/favorites.js';
@@ -81,6 +82,8 @@ app.use('/api/auth', authRefreshRouter);
 app.use('/api/password', passwordRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/api/favorites', favoritesRouter);
+
+app.use('/api', scoreRouter); // <-- montar scoreRouter (colócalo donde prefieras)
 
 const port = process.env.PORT || 3000;
 

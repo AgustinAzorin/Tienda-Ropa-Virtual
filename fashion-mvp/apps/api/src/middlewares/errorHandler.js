@@ -2,6 +2,7 @@
 import { ZodError } from 'zod';
 
 export function errorHandler(err, _req, res, _next) {
+  console.error(err); // <-- mostrar stack en consola para depuración
   // Validación Zod
   if (err instanceof ZodError) {
     return res.status(400).json({
