@@ -77,8 +77,8 @@ const useAuth = () => {
     setUser(d.user || null);
   };
 
-  const register = async (email, password) => {
-    const d = await api("/auth/register", { method: "POST", body: { email, password } });
+  const register = async (email, password, role = "user") => {
+    const d = await api("/auth/register", { method: "POST", body: { email, password, role } });
     const t = d.token || d.accessToken || "";
     if (t) {
       localStorage.setItem("auth_token", t);
@@ -87,6 +87,7 @@ const useAuth = () => {
     }
     return d;
   };
+
 
   const logout = () => {
     localStorage.removeItem("auth_token");
@@ -293,7 +294,7 @@ function LoginPage({ auth }) {
           {err && <div style={{ color: 'red', fontSize: 14 }}>{err}</div>}
           <div style={{ display: 'flex', gap: 8 }}>
             <Button type="submit">Entrar</Button>
-            <Link to="/register" className="link">Crear cuenta</Link>
+            <Link to="/register" className="btn btn-outline">Crear cuenta</Link>
           </div>
         </form>
       </Card>
@@ -305,12 +306,13 @@ function RegisterPage({ auth }) {
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("user"); // 👈 nuevo: user o seller
   const [err, setErr] = useState("");
 
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      await auth.register(email, password);
+      await auth.register(email, password, role); // 👈 pasamos también el rol
       nav("/");
     } catch (e) { setErr(e.message); }
   };
@@ -328,16 +330,24 @@ function RegisterPage({ auth }) {
             <Label>Contraseña</Label>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
+          <div>
+            <Label>Tipo de cuenta</Label>
+            <select className="input" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="user">Usuario</option>
+              <option value="seller">Vendedor</option>
+            </select>
+          </div>
           {err && <div style={{ color: 'red', fontSize: 14 }}>{err}</div>}
           <div style={{ display: 'flex', gap: 8 }}>
             <Button type="submit">Registrarme</Button>
-            <Link to="/login" className="link">Ya tengo cuenta</Link>
+            <Link to="/login" className="btn btn-outline">Ya tengo cuenta</Link>
           </div>
         </form>
       </Card>
     </div>
   );
 }
+
 
 function HomePage({ auth }) {
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -366,6 +376,18 @@ function HomePage({ auth }) {
     // 2) y SIEMPRE actualizamos el outfit local para puntuar
     setOutfitItems(prev => [...prev, product]);
   };
+
+  useEffect(() => {
+    const openWl = () => setWishlistOpen(true);
+    const openCt = () => setCartOpen(true);
+    window.addEventListener('openWishlist', openWl);
+    window.addEventListener('openCart', openCt);
+    return () => {
+      window.removeEventListener('openWishlist', openWl);
+      window.removeEventListener('openCart', openCt);
+    };
+  }, []);
+
 
   const toggleFav = async (productId) => {
     if (!auth.token) return alert("Necesitas iniciar sesión");
@@ -465,37 +487,137 @@ function HomePage({ auth }) {
 // --- App Shell ---
 function AppShell() {
   const auth = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false); // ⬅ NUEVO: estado del menú
+
+  // Helper para saber si es vendedor (ajustá al campo real que te dé /auth/me)
+  const isSeller = !!(auth.user?.role === 'seller' || auth.user?.isSeller);
 
   return (
     <div>
       <header className="app-header">
         <div className="app-header-inner">
-          <Link to="/" className="brand">Fashion-MVP</Link>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button className="btn-wishlist" onClick={() => window.dispatchEvent(new CustomEvent('openWishlist'))}>Wishlist</Button>
-            <Button className="btn-cart" onClick={() => window.dispatchEvent(new CustomEvent('openCart'))}>Carrito</Button>
-            {auth.user ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <span>{auth.user.email}</span>
-                <Button variant="ghost" onClick={auth.logout}>Salir</Button>
-              </div>
-            ) : (
-              <Link to="/login"><Button>Entrar</Button></Link>
-            )}
+          {/* IZQUIERDA: botón hamburguesa + brand */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button
+              className="hamburger-btn"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Abrir menú"
+              title="Menú"
+            >
+              <svg className="hamburger-icon" viewBox="0 0 24 24" fill="none"
+                   xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2"
+                   strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+
+            <Link to="/" className="brand">Fashion-MVP</Link>
+          </div>
+
+          {/* DERECHA: iconos wishlist / carrito + login/logout */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {/* Wishlist */}
+            <button
+              className="icon-btn wishlist"
+              onClick={() => window.dispatchEvent(new CustomEvent('openWishlist'))}
+              aria-label="Wishlist"
+              title="Wishlist"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" strokeWidth="2"
+                   strokeLinecap="round" strokeLinejoin="round"
+                   className="icon">
+                <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+              </svg>
+            </button>
+
+            {/* Carrito */}
+            <button
+              className="icon-btn cart"
+              onClick={() => window.dispatchEvent(new CustomEvent('openCart'))}
+              aria-label="Carrito"
+              title="Carrito"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" strokeWidth="2"
+                   strokeLinecap="round" strokeLinejoin="round"
+                   className="icon">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            </button>
+
+          
           </div>
         </div>
       </header>
+
+      {/* Menú lateral izquierdo (usa el Sheet que ya tenés) */}
+      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} side="left">
+        <h3 style={{ marginTop: 0 }}>Menú</h3>
+        <div className="menu-list">
+          {!auth.user && (
+            <>
+              <Link className="menu-item" to="/login" onClick={() => setMenuOpen(false)}>
+                Iniciar sesión
+              </Link>
+              <Link className="menu-item" to="/register" onClick={() => setMenuOpen(false)}>
+                Registrarse
+                <span className="menu-note">vendedor o cliente</span>
+              </Link>
+            </>
+          )}
+
+          {auth.user && (
+            <>
+              <Link className="menu-item" to="/profile" onClick={() => setMenuOpen(false)}>
+                Perfil
+                <span className="menu-note">{auth.user.email}</span>
+              </Link>
+
+              {/* Solo para vendedores */}
+              {isSeller && (
+                <Link className="menu-item" to="/upload" onClick={() => setMenuOpen(false)}>
+                  Subir producto
+                </Link>
+              )}
+
+              {/* Separador opcional */}
+             <div style={{ height: '1px', background: '#e5e7eb', margin: '8px 0' }}></div>
+
+              {/* 🔴 Cerrar sesión dentro del menú */}
+              <button
+                className="btn-logout"
+                onClick={() => { auth.logout(); setMenuOpen(false); }}
+                style={{ width: '100%' }}
+              >
+                Cerrar sesión
+              </button>
+            </>
+          )}
+        </div>
+      </Sheet>
+
 
       <main className="container">
         <Routes>
           <Route path="/" element={<HomePage auth={auth} />} />
           <Route path="/login" element={<LoginPage auth={auth} />} />
           <Route path="/register" element={<RegisterPage auth={auth} />} />
+          {/* Rutas placeholder para los links del menú */}
+          <Route path="/profile" element={<div className="card"><h2>Mi perfil</h2><p>(Próximamente)</p></div>} />
+          <Route path="/upload" element={<div className="card"><h2>Subir producto</h2><p>(Sólo vendedores — próximamente)</p></div>} />
         </Routes>
       </main>
     </div>
   );
 }
+
+
+
 
 export default function Root() {
   return (
@@ -503,9 +625,4 @@ export default function Root() {
       <AppShell />
     </BrowserRouter>
   );
-}
-
-if (typeof document !== "undefined") {
-  const el = document.getElementById("root");
-  if (el) createRoot(el).render(<Root />);
 }

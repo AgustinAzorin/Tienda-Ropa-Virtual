@@ -136,3 +136,71 @@ body {
 @media (max-width: 1024px) {
   .hero-3 { grid-template-columns: 1fr; }
 }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.2s ease;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Wishlist (corazón) */
+.icon-btn.wishlist { color: #374151; }       /* gris por defecto */
+.icon-btn.wishlist:hover { color: #dc2626; } /* rojo al hover */
+
+/* Carrito */
+.icon-btn.cart { color: #374151; }
+.icon-btn.cart:hover { color: #2563eb; }     /* azul al hover */
+
+/* --- Hamburger button --- */
+.hamburger-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid #e5e7eb; background: #fff; cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+  margin-right: 10px;
+}
+.hamburger-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+
+.hamburger-icon { width: 20px; height: 20px; color: #111827; }
+
+/* --- Menu list inside the sheet --- */
+.menu-list {
+  display: grid; gap: 8px;
+}
+.menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff;
+  text-decoration: none; color: inherit;
+}
+.menu-item:hover { background: #f9fafb; }
+.menu-note { font-size: 12px; color: #6b7280; }
+
+.btn-logout {
+  background: #dc2626;   /* rojo */
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.btn-logout:hover { background: #b91c1c; }
+
+.link {
+  font-size: 14px;
+  color: #1d4ed8;
+  text-decoration: underline;
+  cursor: pointer;
+}
