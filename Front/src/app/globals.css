@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ───────────────────────────────────────────────────────── */
+@theme {
+  /* Colors */
+  --color-cacao:        #0D0A08;
+  --color-warm-white:   #F5F0E8;
+  --color-amber:        #C9A84C;
+  --color-amber-muted:  rgba(201, 168, 76, 0.15);
+  --color-amber-hover:  #B8942E;
+  --color-coral:        #D4614A;
+  --color-coral-muted:  rgba(212, 97, 74, 0.15);
+  --color-coral-hover:  #C04E39;
+
+  /* Surfaces */
+  --color-surface-1:    #141010;
+  --color-surface-2:    #1C1714;
+  --color-surface-3:    #251F1A;
+  --color-glass:        rgba(255, 255, 255, 0.05);
+  --color-border:       rgba(255, 255, 255, 0.08);
+  --color-border-muted: rgba(255, 255, 255, 0.04);
+
+  /* Typography */
+  --font-display:  var(--font-playfair), Georgia, serif;
+  --font-body:     var(--font-dm-sans), system-ui, sans-serif;
+  --font-mono:     var(--font-jb-mono), 'Courier New', monospace;
+
+  /* Border radius */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --duration-fast:   150ms;
+  --duration-normal: 300ms;
+  --duration-slow:   400ms;
+  --ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Base styles ─────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #0D0A08;
+    color: #F5F0E8;
+    font-family: var(--font-body);
+    min-height: 100dvh;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D0A08;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Focus visible ring en ámbar */
+  :focus-visible {
+    outline: 2px solid #C9A84C;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(201, 168, 76, 0.3);
+    color: #F5F0E8;
+  }
+}
+
+/* ─── Utility classes ─────────────────────────────────────────────────────── */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Glassmorphism surface */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Texto con gradiente ámbar */
+  .text-gradient-amber {
+    background: linear-gradient(135deg, #C9A84C, #E8C46A);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Particles container */
+  .particles-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* Animaciones de partículas */
+  @keyframes float-up {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-20px) scale(1); opacity: 0; }
+  }
+
+  @keyframes pulse-amber {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.1); }
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200%  0; }
+  }
+
+  .animate-float-up    { animation: float-up    var(--duration-slow) var(--ease-out) both; }
+  .animate-slide-up    { animation: slide-up    var(--duration-normal) var(--ease-out) both; }
+  .animate-fade-in     { animation: fade-in     var(--duration-normal) ease both; }
+  .animate-pulse-amber { animation: pulse-amber 2s ease-in-out infinite; }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04) 25%,
+      rgba(255,255,255,0.08) 50%,
+      rgba(255,255,255,0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+  }
+}
