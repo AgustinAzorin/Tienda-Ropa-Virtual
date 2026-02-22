@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -61,14 +61,32 @@ export function LandingNav() {
 
 // ─── Floating particles ───────────────────────────────────────────────────────
 
-const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
+function createSeededRng(seed: number) {
+  let value = seed >>> 0;
+  return () => {
+    value = (value * 1664525 + 1013904223) >>> 0;
+    return value / 4294967296;
+  };
+}
+
+const PARTICLE_COUNT = 24;
+const particleRandom = createSeededRng(20260220);
+const PARTICLES = Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
   id: i,
-  size: Math.random() * 2.5 + 1,
-  left: Math.random() * 100,
-  delay: Math.random() * 8,
-  duration: Math.random() * 12 + 10,
-  opacity: Math.random() * 0.4 + 0.1,
+  size: particleRandom() * 2.5 + 1,
+  left: particleRandom() * 100,
+  delay: particleRandom() * 8,
+  duration: particleRandom() * 12 + 10,
+  opacity: particleRandom() * 0.4 + 0.1,
 }));
+
+function stableIndex(input: string, length: number) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return hash % length;
+}
 
 export function Particles() {
   return (
@@ -141,7 +159,7 @@ export function FeedCard({ className, aspectClass = 'aspect-[3/4]', onInteract }
     'from-[#251a14] to-[#1a1010]',
     'from-[#141a25] to-[#100f1a]',
   ];
-  const gradient = colors[Math.floor(Math.random() * colors.length)];
+  const gradient = colors[stableIndex(`${aspectClass}-${className ?? ''}`, colors.length)];
 
   return (
     <button
@@ -208,15 +226,4 @@ export function FeedBlurModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   );
-}
-
-// ─── useRandomFeedCard ────────────────────────────────────────────────────────
-// Generates a stable random color on mount (avoids hydration mismatch)
-
-export function useFeedCardColor() {
-  const ref = useRef<number | null>(null);
-  if (ref.current === null) {
-    ref.current = Math.floor(Math.random() * 4);
-  }
-  return ref.current;
 }
