@@ -4,26 +4,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/route.js"
-    ],
-    "/api/auth/refresh/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/refresh/route.js"
-    ],
-    "/api/profile/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/profile/route.js"
-    ],
-    "/api/body-profile/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/body-profile/route.js"
-    ],
-    "/api/auth/password/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/password/route.js"
     ]
   }
 }

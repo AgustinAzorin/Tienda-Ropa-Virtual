@@ -70,11 +70,15 @@ export function RegisterForm() {
         }
         const { user, tokens } = json.data;
         saveSession(user, tokens.accessToken, tokens.refreshToken);
-        document.cookie = 'onboarding_done=0; Path=/; Max-Age=31536000; SameSite=Lax';
+        document.cookie = 'auth_session=1; path=/; max-age=86400'; // 24 horas
+        document.cookie = 'onboarding_done=0; path=/; max-age=31536000';
         router.push('/onboarding/perfil');
         router.refresh();
       } catch {
         setServerError('Error de conexión. Intentá de nuevo.');
+      } finally {
+        // Asegura que el estado de carga se desactive aunque haya error
+        // (isPending se controla por startTransition, pero si usas otro loading, setéalo aquí)
       }
     });
   };

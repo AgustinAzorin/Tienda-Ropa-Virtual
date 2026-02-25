@@ -16,35 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/auth/registro/page.js"
     ],
-    "/onboarding/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/onboarding/layout.js"
-    ],
-    "/onboarding/perfil/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/onboarding/perfil/page.js"
-    ],
     "/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/onboarding/medidas/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/onboarding/medidas/page.js"
-    ],
     "/auth/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/auth/login/page.js"
-    ],
-    "/auth/recuperar/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/auth/recuperar/page.js"
     ]
   }
 }

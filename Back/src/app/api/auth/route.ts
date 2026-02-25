@@ -1,3 +1,13 @@
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': 'http://localhost:3000',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
 import { type NextRequest, NextResponse } from 'next/server';
 import { authService } from '@/modules/auth/auth.service';
 import { ok, created } from '@/lib/response';
@@ -16,7 +26,18 @@ export async function POST(request: NextRequest) {
         email:    body.email,
         password: body.password,
       });
-      return created(result);
+      const response = NextResponse.json(result, { status: 201 });
+      response.cookies.set('auth_session', '1', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400,
+      });
+      response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
     }
 
     // Default: login
@@ -24,7 +45,18 @@ export async function POST(request: NextRequest) {
       email:    body.email,
       password: body.password,
     });
-    return ok(result);
+    const response = NextResponse.json(result);
+    response.cookies.set('auth_session', '1', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 86400,
+    });
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   } catch (err) {
     return handleError(err);
   }

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { customUsers, refreshTokens, passwordResets } from '@/db/schema';
+import { customUsers, refreshTokens, passwordResets, profiles } from '@/db/schema';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { signAccessToken, generateRefreshToken } from '@/lib/jwt';
 import { supabase } from '@/lib/supabase/client';
@@ -20,14 +20,14 @@ function sha256(value: string): string {
 const ACCESS_TOKEN_SECS = 15 * 60;          // 15 minutos
 const REFRESH_TOKEN_DAYS = 30;              // 30 días
 
-async function issueTokens(userId: string, email: string): Promise<AuthTokens> {
-  const accessToken  = await signAccessToken(userId, email);
+async function issueTokens(userId: string, email: string, tx: any = db): Promise<AuthTokens> {
+  const accessToken = await signAccessToken(userId, email);
   const refreshToken = generateRefreshToken();
-  const tokenHash    = sha256(refreshToken);
-  const expiresAt    = new Date(Date.now() + REFRESH_TOKEN_DAYS * 86_400_000);
+  const tokenHash = sha256(refreshToken);
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 86_400_000);
 
-  await db.insert(refreshTokens).values({
-    user_id:    userId,
+  await tx.insert(refreshTokens).values({
+    user_id: userId,
     token_hash: tokenHash,
     expires_at: expiresAt,
   });
@@ -35,36 +35,51 @@ async function issueTokens(userId: string, email: string): Promise<AuthTokens> {
   return { accessToken, refreshToken, expiresIn: ACCESS_TOKEN_SECS };
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('DB_TIMEOUT')), ms))
+  ]);
+}
+
 // ── Servicio ───────────────────────────────────────────────────────────────
 
 export class AuthService implements IAuthService {
 
   async register({ email, password }: RegisterDto): Promise<AuthResult> {
-    const existing = await db
-      .select({ id: customUsers.id })
-      .from(customUsers)
-      .where(eq(customUsers.email, email.toLowerCase()))
-      .limit(1);
+  // 1. Primero verifica que no exista
+  const existing = await db.select({ id: customUsers.id }).from(customUsers).where(eq(customUsers.email, email.toLowerCase())).limit(1);
+  if (existing.length > 0) throw new ConflictError('Este email ya está registrado');
 
-    if (existing.length > 0) {
-      throw new ConflictError('Este email ya está registrado');
+  const passwordHash = await hashPassword(password);
+
+  // 2. Transacción: Todo o nada
+  return await db.transaction(async (tx) => {
+    try {
+      console.log('[REGISTER] Iniciando transacción');
+      // Inserta usuario
+      const [user] = await tx.insert(customUsers)
+        .values({ email: email.toLowerCase(), password_hash: passwordHash })
+        .returning({ id: customUsers.id, email: customUsers.email });
+      console.log('[REGISTER] Usuario insertado:', user);
+
+      // Inserta perfil
+      const profileResult = await tx.insert(profiles).values({
+        id: user.id,
+        username: `user_${user.id.slice(0, 8)}`,
+      });
+      console.log('[REGISTER] Perfil insertado:', profileResult);
+
+      // Genera los tokens usando la transacción
+      const tokens = await issueTokens(user.id, user.email, tx);
+      console.log('[REGISTER] Tokens generados:', tokens);
+      return { user: { id: user.id, email: user.email }, tokens };
+    } catch (err) {
+      console.error('[REGISTER] Error en transacción:', err);
+      throw err;
     }
-
-    const passwordHash = await hashPassword(password);
-    const [user] = await db
-      .insert(customUsers)
-      .values({ email: email.toLowerCase(), password_hash: passwordHash })
-      .returning({ id: customUsers.id, email: customUsers.email });
-
-    // Crear perfil vacío automáticamente al registrar
-    await db.insert(profiles).values({
-      id: user.id,
-      username: `user_${user.id.slice(0, 8)}`,
-    });
-
-    const tokens = await issueTokens(user.id, user.email);
-    return { user: { id: user.id, email: user.email }, tokens };
-  }
+  });
+}
 
   async loginWithPassword({ email, password }: LoginDto): Promise<AuthResult> {
     const [user] = await db
@@ -75,7 +90,10 @@ export class AuthService implements IAuthService {
 
     if (!user) throw new UnauthorizedError('Credenciales inválidas');
 
+    console.log("Password recibido:", password);
+    console.log("Hash en DB:", user.password_hash);
     const valid = await verifyPassword(password, user.password_hash);
+    console.log("¿Es válido?:", valid);
     if (!valid) throw new UnauthorizedError('Credenciales inválidas');
 
     const tokens = await issueTokens(user.id, user.email);
