@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 import { CheckCircle2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { apiFetch, ApiError } from '@/lib/api';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 const schema = z
   .object({
@@ -25,13 +27,15 @@ const schema = z
 type Errors = Partial<Record<'password' | 'confirm', string>>;
 
 export function NewPasswordForm() {
-  const router = useRouter();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const resetToken   = searchParams.get('token');   // presente si viene desde email de reset
+
   const [isPending, startTransition] = useTransition();
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [errors, setErrors] = useState<Errors>({});
-  const [success, setSuccess] = useState(false);
-  const supabase = createClient();
+  const [confirm, setConfirm]   = useState('');
+  const [errors, setErrors]     = useState<Errors>({});
+  const [success, setSuccess]   = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,13 +52,30 @@ export function NewPasswordForm() {
     setErrors({});
 
     startTransition(async () => {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) {
-        setErrors({ password: 'No se pudo actualizar la contraseña. El link puede haber expirado.' });
-        return;
+      try {
+        if (resetToken) {
+          // Flujo de reset desde email: token en URL
+          await fetch(`${API}/api/auth/password?action=reset-confirm`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ token: resetToken, password }),
+          });
+        } else {
+          // Flujo de cambio de contraseña estando autenticado
+          await apiFetch('/api/auth/password?action=update', {
+            method: 'POST',
+            body:   JSON.stringify({ password }),
+          });
+        }
+        setSuccess(true);
+        setTimeout(() => router.push('/auth/login'), 2000);
+      } catch (err) {
+        const msg =
+          err instanceof ApiError
+            ? err.message
+            : 'No se pudo actualizar la contraseña. El link puede haber expirado.';
+        setErrors({ password: msg });
       }
-      setSuccess(true);
-      setTimeout(() => router.push('/auth/login'), 2000);
     });
   };
 
@@ -100,3 +121,4 @@ export function NewPasswordForm() {
     </form>
   );
 }
+

@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Info } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { apiFetch } from '@/lib/api';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { BodySlider } from '@/components/ui/BodySlider';
 import { SkinTonePicker, type SkinTone } from '@/components/ui/SkinTonePicker';
@@ -155,7 +155,6 @@ const DEFAULT_MEASUREMENTS = {
 export default function MedidasPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const supabase = createClient();
 
   const [m, setM] = useState(DEFAULT_MEASUREMENTS);
   const [skinTone, setSkinTone] = useState<SkinTone | null>(null);
@@ -178,37 +177,26 @@ export default function MedidasPage() {
 
   const handleFinish = () => {
     startTransition(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase.from('body_profiles').upsert({
-        user_id:           user.id,
-        height_cm:         m.height,
-        weight_kg:         m.weight,
-        chest_cm:          m.chest,
-        waist_cm:          m.waist,
-        hips_cm:           m.hips,
-        shoulder_width_cm: m.shoulders,
-        skin_tone:         skinTone,
-        consent_given:     true,
+      await apiFetch('/api/body-profile', {
+        method: 'PUT',
+        body:   JSON.stringify({
+          height_cm:         m.height,
+          weight_kg:         m.weight,
+          chest_cm:          m.chest,
+          waist_cm:          m.waist,
+          hips_cm:           m.hips,
+          shoulder_width_cm: m.shoulders,
+          skin_tone:         skinTone,
+        }),
       });
-
-      router.push('/home');
+      document.cookie = 'onboarding_done=1; Path=/; Max-Age=31536000; SameSite=Lax';
+      router.push('/');
     });
   };
 
   const handleSkip = () => {
-    startTransition(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase.from('body_profiles').upsert({
-        user_id:       user.id,
-        consent_given: false,
-      });
-
-      router.push('/home?welcome=1&remind_measurements=1');
-    });
+    document.cookie = 'onboarding_done=1; Path=/; Max-Age=31536000; SameSite=Lax';
+    router.push('/?welcome=1&remind_measurements=1');
   };
 
   return (

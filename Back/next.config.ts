@@ -3,9 +3,7 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // The Back/ project is API-only — no pages UI
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['sharp', 'postgres'],
-  },
+  serverExternalPackages: ['sharp', 'postgres', 'bcryptjs'],
   images: {
     remotePatterns: [
       {
@@ -18,3 +16,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

@@ -1,24 +1,88 @@
+import { createHash, randomUUID } from 'crypto';
+import { eq, and } from 'drizzle-orm';
+import { db } from '@/db/client';
+import { customUsers, refreshTokens, passwordResets } from '@/db/schema';
+import { hashPassword, verifyPassword } from '@/lib/password';
+import { signAccessToken, generateRefreshToken } from '@/lib/jwt';
 import { supabase } from '@/lib/supabase/client';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { AppError } from '@/lib/errors';
-import type { IAuthService, RegisterDto, LoginDto, AuthResult } from './interfaces/IAuthService';
+import { AppError, UnauthorizedError, ConflictError } from '@/lib/errors';
+import type {
+  IAuthService, RegisterDto, LoginDto,
+  AuthResult, AuthTokens,
+} from './interfaces/IAuthService';
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function sha256(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+const ACCESS_TOKEN_SECS = 15 * 60;          // 15 minutos
+const REFRESH_TOKEN_DAYS = 30;              // 30 días
+
+async function issueTokens(userId: string, email: string): Promise<AuthTokens> {
+  const accessToken  = await signAccessToken(userId, email);
+  const refreshToken = generateRefreshToken();
+  const tokenHash    = sha256(refreshToken);
+  const expiresAt    = new Date(Date.now() + REFRESH_TOKEN_DAYS * 86_400_000);
+
+  await db.insert(refreshTokens).values({
+    user_id:    userId,
+    token_hash: tokenHash,
+    expires_at: expiresAt,
+  });
+
+  return { accessToken, refreshToken, expiresIn: ACCESS_TOKEN_SECS };
+}
+
+// ── Servicio ───────────────────────────────────────────────────────────────
 
 export class AuthService implements IAuthService {
 
   async register({ email, password }: RegisterDto): Promise<AuthResult> {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw new AppError('AUTH_ERROR', error.message, 400);
-    if (!data.user || !data.session) throw new AppError('AUTH_ERROR', 'Registro incompleto', 500);
-    return { user: data.user, session: data.session };
+    const existing = await db
+      .select({ id: customUsers.id })
+      .from(customUsers)
+      .where(eq(customUsers.email, email.toLowerCase()))
+      .limit(1);
+
+    if (existing.length > 0) {
+      throw new ConflictError('Este email ya está registrado');
+    }
+
+    const passwordHash = await hashPassword(password);
+    const [user] = await db
+      .insert(customUsers)
+      .values({ email: email.toLowerCase(), password_hash: passwordHash })
+      .returning({ id: customUsers.id, email: customUsers.email });
+
+    // Crear perfil vacío automáticamente al registrar
+    await db.insert(profiles).values({
+      id: user.id,
+      username: `user_${user.id.slice(0, 8)}`,
+    });
+
+    const tokens = await issueTokens(user.id, user.email);
+    return { user: { id: user.id, email: user.email }, tokens };
   }
 
   async loginWithPassword({ email, password }: LoginDto): Promise<AuthResult> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new AppError('AUTH_INVALID_CREDENTIALS', error.message, 401);
-    if (!data.user || !data.session) throw new AppError('AUTH_ERROR', 'Login fallido', 500);
-    return { user: data.user, session: data.session };
+    const [user] = await db
+      .select()
+      .from(customUsers)
+      .where(eq(customUsers.email, email.toLowerCase()))
+      .limit(1);
+
+    if (!user) throw new UnauthorizedError('Credenciales inválidas');
+
+    const valid = await verifyPassword(password, user.password_hash);
+    if (!valid) throw new UnauthorizedError('Credenciales inválidas');
+
+    const tokens = await issueTokens(user.id, user.email);
+    return { user: { id: user.id, email: user.email }, tokens };
   }
 
+  /** Mantener Google OAuth en paralelo — redirige a Supabase OAuth */
   async loginWithOAuth(provider: 'google'): Promise<{ url: string }> {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -28,40 +92,141 @@ export class AuthService implements IAuthService {
     return { url: data.url };
   }
 
-  async logout(_accessToken?: string): Promise<void> {
-    const client = await createSupabaseServerClient();
-    const { error } = await client.auth.signOut();
-    if (error) throw new AppError('AUTH_ERROR', error.message, 400);
+  async logout(userId: string, refreshToken?: string): Promise<void> {
+    if (refreshToken) {
+      // Revocar solo el refresh token específico
+      const tokenHash = sha256(refreshToken);
+      await db
+        .update(refreshTokens)
+        .set({ revoked: true })
+        .where(
+          and(
+            eq(refreshTokens.user_id, userId),
+            eq(refreshTokens.token_hash, tokenHash),
+          ),
+        );
+    } else {
+      // Revocar todos los refresh tokens del usuario
+      await db
+        .update(refreshTokens)
+        .set({ revoked: true })
+        .where(eq(refreshTokens.user_id, userId));
+    }
   }
 
-  async refreshSession(refreshToken: string): Promise<AuthResult> {
-    const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-    if (error) throw new AppError('AUTH_ERROR', error.message, 401);
-    if (!data.user || !data.session) throw new AppError('AUTH_ERROR', 'Sesión inválida', 401);
-    return { user: data.user, session: data.session };
+  async refreshSession(refreshToken: string): Promise<AuthTokens> {
+    const tokenHash = sha256(refreshToken);
+    const now = new Date();
+
+    const [row] = await db
+      .select()
+      .from(refreshTokens)
+      .where(eq(refreshTokens.token_hash, tokenHash))
+      .limit(1);
+
+    if (!row || row.revoked || row.expires_at < now) {
+      throw new UnauthorizedError('Refresh token inválido o expirado');
+    }
+
+    // Obtener datos del usuario
+    const [user] = await db
+      .select({ id: customUsers.id, email: customUsers.email })
+      .from(customUsers)
+      .where(eq(customUsers.id, row.user_id))
+      .limit(1);
+
+    if (!user) throw new UnauthorizedError('Usuario no encontrado');
+
+    // Rotar: revocar el viejo y emitir nuevo
+    await db
+      .update(refreshTokens)
+      .set({ revoked: true })
+      .where(eq(refreshTokens.id, row.id));
+
+    return issueTokens(user.id, user.email);
   }
 
   async sendPasswordReset(email: string): Promise<void> {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+    const [user] = await db
+      .select({ id: customUsers.id })
+      .from(customUsers)
+      .where(eq(customUsers.email, email.toLowerCase()))
+      .limit(1);
+
+    // Anti-enumeración: no revelar si el email existe
+    if (!user) return;
+
+    const token    = randomUUID();
+    const tokenHash = sha256(token);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    // Invalidar resets anteriores
+    await db
+      .update(passwordResets)
+      .set({ used: true })
+      .where(eq(passwordResets.user_id, user.id));
+
+    await db.insert(passwordResets).values({
+      user_id:    user.id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
     });
-    if (error) throw new AppError('AUTH_ERROR', error.message, 400);
+
+    // En desarrollo: el token se retorna por el API route
+    // En producción: enviar por email
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEV] Password reset token for ${email}: ${token}`);
+    }
   }
 
-  async updatePassword(_accessToken: string, newPassword: string): Promise<void> {
-    const client = await createSupabaseServerClient();
-    const { error } = await client.auth.updateUser({ password: newPassword });
-    if (error) throw new AppError('AUTH_ERROR', error.message, 400);
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const passwordHash = await hashPassword(newPassword);
+    await db
+      .update(customUsers)
+      .set({ password_hash: passwordHash, updated_at: new Date() })
+      .where(eq(customUsers.id, userId));
+
+    // Revocar todos los refresh tokens por seguridad
+    await db
+      .update(refreshTokens)
+      .set({ revoked: true })
+      .where(eq(refreshTokens.user_id, userId));
   }
 
-  async verifyOtp(email: string, token: string): Promise<AuthResult> {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email, token, type: 'email',
-    });
-    if (error) throw new AppError('AUTH_ERROR', error.message, 400);
-    if (!data.user || !data.session) throw new AppError('AUTH_ERROR', 'OTP inválido', 400);
-    return { user: data.user, session: data.session };
+  /** Verificar token de reset de contraseña y actualizar password */
+  async resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
+    const tokenHash = sha256(token);
+    const now = new Date();
+
+    const [row] = await db
+      .select()
+      .from(passwordResets)
+      .where(eq(passwordResets.token_hash, tokenHash))
+      .limit(1);
+
+    if (!row || row.used || row.expires_at < now) {
+      throw new UnauthorizedError('Token de recuperación inválido o expirado');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+
+    await db
+      .update(customUsers)
+      .set({ password_hash: passwordHash, updated_at: new Date() })
+      .where(eq(customUsers.id, row.user_id));
+
+    await db
+      .update(passwordResets)
+      .set({ used: true })
+      .where(eq(passwordResets.id, row.id));
+
+    // Revocar todos los refresh tokens
+    await db
+      .update(refreshTokens)
+      .set({ revoked: true })
+      .where(eq(refreshTokens.user_id, row.user_id));
   }
 }
 
 export const authService = new AuthService();
+

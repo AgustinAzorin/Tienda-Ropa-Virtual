@@ -1,8 +1,8 @@
-import type { User } from '@supabase/supabase-js';
+import type { AuthUser } from '@/modules/auth/interfaces/IAuthService';
 
 /** Attached to the request context after auth middleware validation. */
 export interface AuthContext {
-  user: User;
+  user: AuthUser;
 }
 
 /** Generic cursor-based pagination params. */

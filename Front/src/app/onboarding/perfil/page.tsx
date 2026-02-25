@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Check, X, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
+import { getStoredUser } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 import { debounce } from '@/lib/utils';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Input } from '@/components/ui/Input';
@@ -29,6 +31,7 @@ type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 export default function PerfilPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // Supabase solo para username check (lectura pública) y avatar storage
   const supabase = createClient();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -84,10 +87,10 @@ export default function PerfilPage() {
     setErrors({});
 
     startTransition(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = getStoredUser();
       if (!user) return;
 
-      // Upload avatar if provided
+      // Upload avatar si se proporcionó (usa Supabase Storage — no requiere auth propia)
       let avatarUrl: string | undefined;
       if (avatarFile) {
         const ext = avatarFile.name.split('.').pop();
@@ -101,14 +104,15 @@ export default function PerfilPage() {
         }
       }
 
-      // Upsert profile
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        username,
-        display_name: displayName,
-        bio: bio || null,
-        avatar_url: avatarUrl ?? null,
-        vibes,
+      // Actualizar perfil via Back API
+      await apiFetch('/api/profile', {
+        method: 'PUT',
+        body:   JSON.stringify({
+          username,
+          display_name: displayName,
+          bio:          bio || null,
+          avatar_url:   avatarUrl ?? null,
+        }),
       });
 
       router.push('/onboarding/medidas');

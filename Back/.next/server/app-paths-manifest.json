@@ -1,3 +1,4 @@
 {
-  "/_not-found/page": "app/_not-found/page.js"
+  "/api/auth/route": "app/api/auth/route.js",
+  "/api/auth/password/route": "app/api/auth/password/route.js"
 }

@@ -3,9 +3,10 @@
 import { useState, useTransition } from 'react';
 import { z } from 'zod';
 import { Mail } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 const emailSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -16,7 +17,6 @@ export function RecoverForm() {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [sent, setSent] = useState(false);
-  const supabase = createClient();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +28,12 @@ export function RecoverForm() {
     setEmailError('');
 
     startTransition(async () => {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/nueva-contrasena`,
+      await fetch(`${API}/api/auth/password`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email }),
       });
-      // Always show success to prevent email enumeration
+      // Siempre mostrar éxito para evitar enumeración de emails
       setSent(true);
     });
   };
@@ -79,15 +81,6 @@ export function RecoverForm() {
       <Button type="submit" className="w-full" loading={isPending}>
         Enviar instrucciones
       </Button>
-
-      <p className="text-center">
-        <a
-          href="/auth/login"
-          className="text-sm text-[rgba(245,240,232,0.5)] hover:text-[rgba(245,240,232,0.8)] transition-colors"
-        >
-          ← Volver al inicio de sesión
-        </a>
-      </p>
     </form>
   );
 }

@@ -1,9 +1,9 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 /**
  * Creates a Supabase client that reads/writes the session cookie.
- * Use this in Route Handlers to get the authenticated user.
+ * Used only for Google OAuth callback (Supabase auth kept in parallel).
  */
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -13,16 +13,19 @@ export async function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll()         { return cookieStore.getAll(); },
-        setAll(toSet)    { toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
+        getAll() { return cookieStore.getAll(); },
+        setAll(toSet: { name: string; value: string; options?: CookieOptions }[]) {
+          toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        },
       },
     }
   );
 }
 
-/** Returns the authenticated user or null from the current request cookies. */
+/** Returns the authenticated Supabase user (used only for OAuth flow). */
 export async function getAuthUser() {
   const client = await createSupabaseServerClient();
   const { data: { user } } = await client.auth.getUser();
   return user;
 }
+

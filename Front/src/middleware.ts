@@ -1,58 +1,40 @@
-import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
+const COOKIE_NAME = 'auth_session';
+const ONBOARDING_COOKIE = 'onboarding_done';
+
+/**
+ * Middleware del Front.
+ * Usa la cookie `auth_session=1` (establecida por el cliente tras el login)
+ * para proteger rutas. La verificación real del JWT ocurre en el Back.
+ */
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
+  const isAuthenticated = request.cookies.get(COOKIE_NAME)?.value === '1';
+  const onboardingDone = request.cookies.get(ONBOARDING_COOKIE)?.value === '1';
 
-  // Protect onboarding routes — redirect to login if not authenticated
-  if (pathname.startsWith('/onboarding') && !user) {
+  // Proteger rutas de onboarding — redirigir al login si no autenticado
+  if (pathname.startsWith('/onboarding') && !isAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     return NextResponse.redirect(url);
   }
 
-  // Protect /home and app routes
-  if (pathname.startsWith('/home') && !user) {
+  // Evitar volver al onboarding cuando ya fue completado
+  if (pathname.startsWith('/onboarding') && isAuthenticated && onboardingDone) {
     const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
-  if (pathname.startsWith('/auth') && user) {
+  // Redirigir usuarios autenticados fuera de las páginas de auth
+  if (pathname.startsWith('/auth') && isAuthenticated) {
     const url = request.nextUrl.clone();
-    url.pathname = '/home';
+    url.pathname = onboardingDone ? '/' : '/onboarding/perfil';
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
@@ -60,3 +42,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
+

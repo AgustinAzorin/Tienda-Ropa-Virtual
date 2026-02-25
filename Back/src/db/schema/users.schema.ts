@@ -4,6 +4,36 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+// ── custom_users ──────────────────────────────────────────────────────────────
+export const customUsers = pgTable('custom_users', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  email:          text('email').unique().notNull(),
+  password_hash:  text('password_hash').notNull(),
+  email_verified: boolean('email_verified').notNull().default(false),
+  created_at:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at:     timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ── refresh_tokens ─────────────────────────────────────────────────────────
+export const refreshTokens = pgTable('refresh_tokens', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  user_id:    uuid('user_id').notNull().references(() => customUsers.id, { onDelete: 'cascade' }),
+  token_hash: text('token_hash').unique().notNull(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revoked:    boolean('revoked').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ── password_resets ────────────────────────────────────────────────────────
+export const passwordResets = pgTable('password_resets', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  user_id:    uuid('user_id').notNull().references(() => customUsers.id, { onDelete: 'cascade' }),
+  token_hash: text('token_hash').unique().notNull(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  used:       boolean('used').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ── profiles ────────────────────────────────────────────────────────────────
 export const profiles = pgTable('profiles', {
   id:             uuid('id').primaryKey(),
@@ -54,9 +84,23 @@ export const bodyProfiles = pgTable('body_profiles', {
 });
 
 // ── Relations ────────────────────────────────────────────────────────────────
+export const customUsersRelations = relations(customUsers, ({ many, one }) => ({
+  tokens:         many(refreshTokens),
+  passwordResets: many(passwordResets),
+  profile:        one(profiles, { fields: [customUsers.id], references: [profiles.id] }),
+}));
+
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(customUsers, { fields: [refreshTokens.user_id], references: [customUsers.id] }),
+}));
+
+export const passwordResetsRelations = relations(passwordResets, ({ one }) => ({
+  user: one(customUsers, { fields: [passwordResets.user_id], references: [customUsers.id] }),
+}));
+
 export const profilesRelations = relations(profiles, ({ one }) => ({
   bodyProfile: one(bodyProfiles, {
-    fields: [profiles.id],
+    fields:     [profiles.id],
     references: [bodyProfiles.user_id],
   }),
 }));

@@ -4,9 +4,12 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
+import { saveSession } from '@/lib/auth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Divider, GoogleButton } from './LoginForm';
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 const schema = z.object({
   email: z.string().email('Email inválido'),
@@ -22,7 +25,6 @@ type Errors = Partial<Record<keyof z.infer<typeof schema>, string>>;
 export function RegisterForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const supabase = createClient();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,28 +52,37 @@ export function RegisterForm() {
 
     startTransition(async () => {
       setServerError(null);
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-      });
-
-      if (error) {
-        if (error.message.includes('already registered')) {
-          setErrors({ email: 'Este email ya está registrado' });
-        } else {
-          setServerError('Ocurrió un error. Intentá de nuevo.');
+      try {
+        const res = await fetch(`${API}/api/auth?action=register`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email, password }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          const msg: string = json.error?.message ?? '';
+          if (msg.toLowerCase().includes('ya está registrado') || res.status === 409) {
+            setErrors({ email: 'Este email ya está registrado' });
+          } else {
+            setServerError('Ocurrió un error. Intentá de nuevo.');
+          }
+          return;
         }
-        return;
+        const { user, tokens } = json.data;
+        saveSession(user, tokens.accessToken, tokens.refreshToken);
+        document.cookie = 'onboarding_done=0; Path=/; Max-Age=31536000; SameSite=Lax';
+        router.push('/onboarding/perfil');
+        router.refresh();
+      } catch {
+        setServerError('Error de conexión. Intentá de nuevo.');
       }
-
-      router.push('/onboarding/perfil');
-      router.refresh();
     });
   };
 
   const handleGoogleLogin = () => {
     startTransition(async () => {
+      // Google OAuth sigue usando Supabase como proveedor OAuth (en paralelo)
+      const supabase = createClient();
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/auth/callback` },

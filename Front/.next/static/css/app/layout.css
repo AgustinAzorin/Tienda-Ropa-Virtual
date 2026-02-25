@@ -1904,13 +1904,6 @@
       }
     }
   }
-  .hover\:text-\[rgba\(245\,240\,232\,0\.8\)\] {
-    &:hover {
-      @media (hover: hover) {
-        color: rgba(245,240,232,0.8);
-      }
-    }
-  }
   .hover\:text-warm-white {
     &:hover {
       @media (hover: hover) {
@@ -2029,6 +2022,11 @@
   .sm\:grid-cols-4 {
     @media (width >= 40rem) {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .sm\:grid-cols-5 {
+    @media (width >= 40rem) {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
   .sm\:flex-row {

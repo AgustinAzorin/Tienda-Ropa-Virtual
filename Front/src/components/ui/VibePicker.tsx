@@ -3,24 +3,28 @@
 import { cn } from '@/lib/utils';
 
 export type Vibe =
-  | 'Minimal'
-  | 'Fluido'
-  | 'Estructurado'
-  | 'Oversized'
-  | 'Andrógino'
-  | 'Maximalista'
-  | 'Urbano'
-  | 'Romántico';
+  | 'Casual'
+  | 'Aesthetic'
+  | 'Oversize'
+  | 'Minimalista'
+  | 'Deportivo'
+  | 'Clásico'
+  | 'Preppy'
+  | 'Romántico'
+  | 'Streetwear'
+  | 'Vintage';
 
 const VIBES: { label: Vibe; icon: string }[] = [
-  { label: 'Minimal',      icon: '◻' },
-  { label: 'Fluido',       icon: '∿' },
-  { label: 'Estructurado', icon: '▦' },
-  { label: 'Oversized',    icon: '◰' },
-  { label: 'Andrógino',    icon: '◈' },
-  { label: 'Maximalista',  icon: '✦' },
-  { label: 'Urbano',       icon: '⬡' },
-  { label: 'Romántico',    icon: '◉' },
+  { label: 'Casual',      icon: '◌' },
+  { label: 'Aesthetic',   icon: '✿' },
+  { label: 'Oversize',    icon: '◰' },
+  { label: 'Minimalista', icon: '◻' },
+  { label: 'Deportivo',   icon: '▷' },
+  { label: 'Clásico',     icon: '▪' },
+  { label: 'Preppy',      icon: '◆' },
+  { label: 'Romántico',   icon: '◉' },
+  { label: 'Streetwear',  icon: '⬡' },
+  { label: 'Vintage',     icon: '◎' },
 ];
 
 interface VibePickerProps {
@@ -46,7 +50,7 @@ export function VibePicker({ selected, onChange, className }: VibePickerProps) {
           (elegí todos los que te representen)
         </span>
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {VIBES.map(({ label, icon }) => {
           const active = selected.includes(label);
           return (
