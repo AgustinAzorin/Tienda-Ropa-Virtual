@@ -47,54 +47,73 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export class AuthService implements IAuthService {
 
   async register({ email, password }: RegisterDto): Promise<AuthResult> {
-  // 1. Primero verifica que no exista
-  const existing = await db.select({ id: customUsers.id }).from(customUsers).where(eq(customUsers.email, email.toLowerCase())).limit(1);
-  if (existing.length > 0) throw new ConflictError('Este email ya está registrado');
+    // 1. Normaliza el email recibido
+    const normalizedEmail = email.trim().toLowerCase();
+    // 2. Verifica que no exista
+    const existing = await db.select({ id: customUsers.id }).from(customUsers).where(eq(customUsers.email, normalizedEmail)).limit(1);
+    if (existing.length > 0) throw new ConflictError('Este email ya está registrado');
 
-  const passwordHash = await hashPassword(password);
+    const passwordHash = await hashPassword(password);
 
-  // 2. Transacción: Todo o nada
-  return await db.transaction(async (tx) => {
-    try {
-      console.log('[REGISTER] Iniciando transacción');
-      // Inserta usuario
-      const [user] = await tx.insert(customUsers)
-        .values({ email: email.toLowerCase(), password_hash: passwordHash })
-        .returning({ id: customUsers.id, email: customUsers.email });
-      console.log('[REGISTER] Usuario insertado:', user);
+    // 3. Transacción: Todo o nada
+    return await db.transaction(async (tx) => {
+      try {
+        console.log('[REGISTER] Iniciando transacción');
+        // Inserta usuario
+        const [user] = await tx.insert(customUsers)
+          .values({ email: normalizedEmail, password_hash: passwordHash })
+          .returning({ id: customUsers.id, email: customUsers.email });
+        console.log('[REGISTER] Usuario insertado:', user);
 
-      // Inserta perfil
-      const profileResult = await tx.insert(profiles).values({
-        id: user.id,
-        username: `user_${user.id.slice(0, 8)}`,
-      });
-      console.log('[REGISTER] Perfil insertado:', profileResult);
+        // Inserta perfil
+        const profileResult = await tx.insert(profiles).values({
+          id: user.id,
+          username: `user_${user.id.slice(0, 8)}`,
+        });
+        console.log('[REGISTER] Perfil insertado:', profileResult);
 
-      // Genera los tokens usando la transacción
-      const tokens = await issueTokens(user.id, user.email, tx);
-      console.log('[REGISTER] Tokens generados:', tokens);
-      return { user: { id: user.id, email: user.email }, tokens };
-    } catch (err) {
-      console.error('[REGISTER] Error en transacción:', err);
-      throw err;
-    }
-  });
+        // Genera los tokens usando la transacción
+        const tokens = await issueTokens(user.id, user.email, tx);
+        console.log('[REGISTER] Tokens generados:', tokens);
+        return { user: { id: user.id, email: user.email }, tokens };
+      } catch (err) {
+        console.error('[REGISTER] Error en transacción:', err);
+        throw err;
+      }
+    });
 }
 
   async loginWithPassword({ email, password }: LoginDto): Promise<AuthResult> {
+    // Normaliza el email recibido
+    const normalizedEmail = email.trim().toLowerCase();
+    console.log('[LOGIN] Email recibido:', email);
+    console.log('[LOGIN] Email normalizado:', normalizedEmail);
+
+    // Busca el usuario por email normalizado
     const [user] = await db
       .select()
       .from(customUsers)
-      .where(eq(customUsers.email, email.toLowerCase()))
+      .where(eq(customUsers.email, normalizedEmail))
       .limit(1);
 
-    if (!user) throw new UnauthorizedError('Credenciales inválidas');
+    if (!user) {
+      console.log('[LOGIN] Usuario no encontrado para email:', normalizedEmail);
+      throw new UnauthorizedError('Credenciales inválidas');
+    }
 
-    console.log("Password recibido:", password);
-    console.log("Hash en DB:", user.password_hash);
+    // Compara el email de la DB con el email normalizado
+    console.log('[LOGIN] Email en DB:', user.email);
+    console.log('[LOGIN] ¿Coinciden?:', user.email === normalizedEmail);
+
+    // Verifica la contraseña
+    console.log('[LOGIN] Password recibido:', password);
+    console.log('[LOGIN] Hash en DB:', user.password_hash);
     const valid = await verifyPassword(password, user.password_hash);
-    console.log("¿Es válido?:", valid);
-    if (!valid) throw new UnauthorizedError('Credenciales inválidas');
+    console.log('[LOGIN] ¿Password válido?:', valid);
+    if (!valid) {
+      console.log('[LOGIN] Contraseña inválida para email:', normalizedEmail);
+      throw new UnauthorizedError('Credenciales inválidas');
+    }
 
     const tokens = await issueTokens(user.id, user.email);
     return { user: { id: user.id, email: user.email }, tokens };

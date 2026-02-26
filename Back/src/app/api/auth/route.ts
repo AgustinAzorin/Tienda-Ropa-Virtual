@@ -1,9 +1,22 @@
+import bcrypt from 'bcryptjs';
+
+const ROUNDS = 12;
+
+export async function hashPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, ROUNDS);
+}
+
+export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(plain, hash);
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': 'http://localhost:3000',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
@@ -22,41 +35,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (url.searchParams.get('action') === 'register') {
-      const result = await authService.register({
-        email:    body.email,
-        password: body.password,
-      });
-      const response = NextResponse.json(result, { status: 201 });
-      response.cookies.set('auth_session', '1', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 86400,
-      });
-      response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
-      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      return response;
+        const result = await authService.register({
+          email:    body.email,
+          password: body.password,
+        });
+        const response = NextResponse.json(result, { status: 201 });
+        // AÑADE ESTA LÍNEA AQUÍ
+        response.cookies.set('auth_session', '1', {
+          httpOnly: true, // Crucial: impide que JS lea la cookie (seguridad)
+          secure: process.env.NODE_ENV === 'production', // true en producción
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24, // 24 horas
+        });
+        response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+        response.headers.set('Access-Control-Allow-Credentials', 'true');
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return response;
     }
 
     // Default: login
-    const result = await authService.loginWithPassword({
-      email:    body.email,
-      password: body.password,
-    });
-    const response = NextResponse.json(result);
-    response.cookies.set('auth_session', '1', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 86400,
-    });
-    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return response;
+      const result = await authService.loginWithPassword({
+        email:    body.email,
+        password: body.password,
+      });
+      const response = NextResponse.json(result);
+      // AÑADE ESTA LÍNEA AQUÍ
+      response.cookies.set('auth_session', '1', {
+        httpOnly: true, // Crucial: impide que JS lea la cookie (seguridad)
+        secure: process.env.NODE_ENV === 'production', // true en producción
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24, // 24 horas
+      });
+      response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
   } catch (err) {
     return handleError(err);
   }
@@ -68,7 +85,12 @@ export async function DELETE(request: NextRequest) {
     const userId = await requireUserId(request);
     const body   = await request.json().catch(() => ({}));
     await authService.logout(userId, body?.refreshToken);
-    return new NextResponse(null, { status: 204 });
+    const response = new NextResponse(null, { status: 204 });
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   } catch (err) {
     return handleError(err);
   }
@@ -80,9 +102,19 @@ export async function GET(request: NextRequest) {
   try {
     if (provider === 'google') {
       const { url } = await authService.loginWithOAuth('google');
-      return NextResponse.redirect(url);
+      const response = NextResponse.redirect(url);
+      response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
     }
-    return NextResponse.json({ error: 'provider no soportado' }, { status: 400 });
+    const response = NextResponse.json({ error: 'provider no soportado' }, { status: 400 });
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   } catch (err) {
     return handleError(err);
   }
