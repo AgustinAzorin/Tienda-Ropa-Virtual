@@ -38,9 +38,11 @@ export class CatalogRepository implements ICatalogRepository {
   }
 
   async findById(id: string): Promise<ProductWithVariants | null> {
-    const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1);
+    const [[product], variants] = await Promise.all([
+      db.select().from(products).where(eq(products.id, id)).limit(1),
+      db.select().from(productVariants).where(eq(productVariants.product_id, id)),
+    ]);
     if (!product) return null;
-    const variants = await db.select().from(productVariants).where(eq(productVariants.product_id, id));
     return { ...(product as Product), variants: variants as ProductVariant[] };
   }
 

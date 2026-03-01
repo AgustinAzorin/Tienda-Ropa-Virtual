@@ -58,26 +58,21 @@ export class AuthService implements IAuthService {
     // 3. Transacción: Todo o nada
     return await db.transaction(async (tx) => {
       try {
-        console.log('[REGISTER] Iniciando transacción');
         // Inserta usuario
         const [user] = await tx.insert(customUsers)
           .values({ email: normalizedEmail, password_hash: passwordHash })
           .returning({ id: customUsers.id, email: customUsers.email });
-        console.log('[REGISTER] Usuario insertado:', user);
 
         // Inserta perfil
-        const profileResult = await tx.insert(profiles).values({
+        await tx.insert(profiles).values({
           id: user.id,
           username: `user_${user.id.slice(0, 8)}`,
         });
-        console.log('[REGISTER] Perfil insertado:', profileResult);
 
         // Genera los tokens usando la transacción
         const tokens = await issueTokens(user.id, user.email, tx);
-        console.log('[REGISTER] Tokens generados:', tokens);
         return { user: { id: user.id, email: user.email }, tokens };
       } catch (err) {
-        console.error('[REGISTER] Error en transacción:', err);
         throw err;
       }
     });
@@ -86,8 +81,6 @@ export class AuthService implements IAuthService {
   async loginWithPassword({ email, password }: LoginDto): Promise<AuthResult> {
     // Normaliza el email recibido
     const normalizedEmail = email.trim().toLowerCase();
-    console.log('[LOGIN] Email recibido:', email);
-    console.log('[LOGIN] Email normalizado:', normalizedEmail);
 
     // Busca el usuario por email normalizado
     const [user] = await db
@@ -97,21 +90,12 @@ export class AuthService implements IAuthService {
       .limit(1);
 
     if (!user) {
-      console.log('[LOGIN] Usuario no encontrado para email:', normalizedEmail);
       throw new UnauthorizedError('Credenciales inválidas');
     }
 
-    // Compara el email de la DB con el email normalizado
-    console.log('[LOGIN] Email en DB:', user.email);
-    console.log('[LOGIN] ¿Coinciden?:', user.email === normalizedEmail);
-
     // Verifica la contraseña
-    console.log('[LOGIN] Password recibido:', password);
-    console.log('[LOGIN] Hash en DB:', user.password_hash);
     const valid = await verifyPassword(password, user.password_hash);
-    console.log('[LOGIN] ¿Password válido?:', valid);
     if (!valid) {
-      console.log('[LOGIN] Contraseña inválida para email:', normalizedEmail);
       throw new UnauthorizedError('Credenciales inválidas');
     }
 

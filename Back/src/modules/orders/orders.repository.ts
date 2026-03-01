@@ -17,7 +17,8 @@ export class OrderRepository implements IOrderRepository {
   async listByUser(userId: string): Promise<Order[]> {
     return db.select().from(orders)
       .where(eq(orders.user_id, userId))
-      .orderBy(sql`${orders.created_at} DESC`) as Promise<Order[]>;
+      .orderBy(sql`${orders.created_at} DESC`)
+      .limit(50) as Promise<Order[]>;
   }
 
   async create(dto: CreateOrderDto & { totalAmount: number; medusaOrderId?: string }): Promise<Order> {

@@ -1,1 +1,4 @@
-{}
+{
+  "/api/profile/route": "app/api/profile/route.js",
+  "/api/body-profile/route": "app/api/body-profile/route.js"
+}

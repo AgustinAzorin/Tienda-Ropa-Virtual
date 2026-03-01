@@ -9,17 +9,21 @@ export class FollowRepository {
     if (followerId === followingId) throw new AppError('SELF_FOLLOW', 'No podés seguirte a vos mismo', 400);
     await db.insert(follows).values({ follower_id: followerId, following_id: followingId })
       .onConflictDoNothing();
-    // Update denormalized counters
-    await db.update(profiles).set({ following_count: sql`${profiles.following_count} + 1` }).where(eq(profiles.id, followerId));
-    await db.update(profiles).set({ follower_count:  sql`${profiles.follower_count}  + 1` }).where(eq(profiles.id, followingId));
+    // Update denormalized counters in parallel
+    await Promise.all([
+      db.update(profiles).set({ following_count: sql`${profiles.following_count} + 1` }).where(eq(profiles.id, followerId)),
+      db.update(profiles).set({ follower_count:  sql`${profiles.follower_count}  + 1` }).where(eq(profiles.id, followingId)),
+    ]);
   }
 
   async unfollow(followerId: string, followingId: string): Promise<void> {
     const result = await db.delete(follows)
       .where(and(eq(follows.follower_id, followerId), eq(follows.following_id, followingId)));
     if ((result.rowCount ?? 0) > 0) {
-      await db.update(profiles).set({ following_count: sql`GREATEST(${profiles.following_count} - 1, 0)` }).where(eq(profiles.id, followerId));
-      await db.update(profiles).set({ follower_count:  sql`GREATEST(${profiles.follower_count}  - 1, 0)` }).where(eq(profiles.id, followingId));
+      await Promise.all([
+        db.update(profiles).set({ following_count: sql`GREATEST(${profiles.following_count} - 1, 0)` }).where(eq(profiles.id, followerId)),
+        db.update(profiles).set({ follower_count:  sql`GREATEST(${profiles.follower_count}  - 1, 0)` }).where(eq(profiles.id, followingId)),
+      ]);
     }
   }
 
@@ -27,7 +31,8 @@ export class FollowRepository {
     const rows = await db.select({ profile: profiles })
       .from(follows)
       .innerJoin(profiles, eq(profiles.id, follows.follower_id))
-      .where(eq(follows.following_id, userId));
+      .where(eq(follows.following_id, userId))
+      .limit(50);
     return rows.map((r) => r.profile as Profile);
   }
 
@@ -35,7 +40,8 @@ export class FollowRepository {
     const rows = await db.select({ profile: profiles })
       .from(follows)
       .innerJoin(profiles, eq(profiles.id, follows.following_id))
-      .where(eq(follows.follower_id, userId));
+      .where(eq(follows.follower_id, userId))
+      .limit(50);
     return rows.map((r) => r.profile as Profile);
   }
 

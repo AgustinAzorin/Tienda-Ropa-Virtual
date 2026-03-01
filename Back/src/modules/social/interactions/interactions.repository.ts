@@ -8,8 +8,10 @@ export class InteractionsRepository {
 
   // ── Likes ─────────────────────────────────────────────────
   async like(userId: string, postId: string): Promise<void> {
-    await db.insert(likes).values({ user_id: userId, post_id: postId }).onConflictDoNothing();
-    await db.update(posts).set({ like_count: sql`${posts.like_count} + 1` }).where(eq(posts.id, postId));
+    await Promise.all([
+      db.insert(likes).values({ user_id: userId, post_id: postId }).onConflictDoNothing(),
+      db.update(posts).set({ like_count: sql`${posts.like_count} + 1` }).where(eq(posts.id, postId)),
+    ]);
   }
 
   async unlike(userId: string, postId: string): Promise<void> {
@@ -40,7 +42,8 @@ export class InteractionsRepository {
 
   async listComments(postId: string): Promise<Comment[]> {
     return db.select().from(comments).where(eq(comments.post_id, postId))
-      .orderBy(sql`${comments.created_at} ASC`) as Promise<Comment[]>;
+      .orderBy(sql`${comments.created_at} ASC`)
+      .limit(100) as Promise<Comment[]>;
   }
 
   // ── Saves ─────────────────────────────────────────────────
@@ -61,7 +64,7 @@ export class InteractionsRepository {
   async listSaves(userId: string, collectionName?: string): Promise<Save[]> {
     const conditions: SQL<unknown>[] = [eq(saves.user_id, userId)];
     if (collectionName) conditions.push(eq(saves.collection_name, collectionName));
-    return db.select().from(saves).where(and(...conditions)) as Promise<Save[]>;
+    return db.select().from(saves).where(and(...conditions)).limit(50) as Promise<Save[]>;
   }
 }
 

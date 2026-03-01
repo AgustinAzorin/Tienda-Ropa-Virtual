@@ -41,7 +41,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             type={resolvedType}
             className={cn(
               'w-full h-11 px-4 bg-white/5 border border-white/10 rounded-[8px] text-warm-white placeholder:text-warm-white/30 text-sm',
-              'transition-all duration-300 outline-none',
+              'transition-[border-color,background-color,box-shadow] duration-150 outline-none',
               'focus:border-amber/60 focus:bg-white/8 focus:ring-1 focus:ring-amber/20',
               error && 'border-coral/60 focus:border-coral focus:ring-coral/20',
               (isPassword || suffix) && 'pr-11',

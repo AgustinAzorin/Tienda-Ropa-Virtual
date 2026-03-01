@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { posts, follows, profiles, postImages, postProductTags } from '@/db/schema';
-import { eq, lt, and, sql, desc } from 'drizzle-orm';
+import { eq, lt, and, sql, desc, inArray } from 'drizzle-orm';
 import type { Post } from '@/models/social/Post';
 import type { PostImage } from '@/models/social/PostImage';
 import type { PostProductTag } from '@/models/social/PostProductTag';
@@ -78,18 +78,38 @@ export class PostRepository {
     .orderBy(sql`${posts.created_at} DESC`)
     .limit(20);
 
-    return rows.map((r) => ({
-      ...(r.post as Post),
-      images:      [],
-      productTags: [],
-      author:      { username: r.username, avatar_url: r.avatar_url },
-    }));
+    const postIds = rows.map((r) => (r.post as Post).id);
+
+    // Batch-load images and product tags in parallel
+    const [allImages, allTags] = postIds.length
+      ? await Promise.all([
+          db.select().from(postImages).where(inArray(postImages.post_id, postIds)),
+          db.select().from(postProductTags).where(inArray(postProductTags.post_id, postIds)),
+        ])
+      : [[], []];
+
+    const imagesByPost = new Map<string, PostImage[]>();
+    for (const img of allImages) imagesByPost.set(img.post_id, [...(imagesByPost.get(img.post_id) ?? []), img as PostImage]);
+
+    const tagsByPost = new Map<string, PostProductTag[]>();
+    for (const tag of allTags) tagsByPost.set(tag.post_id, [...(tagsByPost.get(tag.post_id) ?? []), tag as PostProductTag]);
+
+    return rows.map((r) => {
+      const post = r.post as Post;
+      return {
+        ...post,
+        images:      imagesByPost.get(post.id) ?? [],
+        productTags: tagsByPost.get(post.id) ?? [],
+        author:      { username: r.username, avatar_url: r.avatar_url },
+      };
+    });
   }
 
   async listByUser(userId: string): Promise<Post[]> {
     return db.select().from(posts)
       .where(eq(posts.user_id, userId))
-      .orderBy(desc(posts.created_at)) as Promise<Post[]>;
+      .orderBy(desc(posts.created_at))
+      .limit(50) as Promise<Post[]>;
   }
 
   async getDiscoveryFeed(params: { cursor?: string } = {}): Promise<Post[]> {

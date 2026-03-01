@@ -4,7 +4,10 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // Fix workspace root detection warning when multiple lockfiles exist
   outputFileTracingRoot: path.join(__dirname),
+  reactStrictMode: true,
+  compress: true,
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',

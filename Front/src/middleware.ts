@@ -5,33 +5,36 @@ const ONBOARDING_COOKIE = 'onboarding_done';
 
 /**
  * Middleware del Front.
- * Usa la cookie `auth_session=1` (establecida por el cliente tras el login)
- * para proteger rutas. La verificación real del JWT ocurre en el Back.
+ *
+ * Reglas:
+ * 1. `/`                  → si NO autenticado, redirige a /auth/registro
+ * 2. `/auth/*`            → accesible siempre (excepto si ya está autenticado + onboarding completo)
+ * 3. `/onboarding/*`      → requiere estar autenticado, sino → /auth/login
+ * 4. NUNCA redirige automáticamente a /onboarding/perfil desde el middleware
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthenticated = request.cookies.get(COOKIE_NAME)?.value === '1';
-  const onboardingDone = request.cookies.get(ONBOARDING_COOKIE)?.value === '1';
+  const onboardingDone  = request.cookies.get(ONBOARDING_COOKIE)?.value === '1';
 
-  // Proteger rutas de onboarding — redirigir al login si no autenticado
+  // 1. Landing `/` → redirigir a registro si no autenticado
+  if (pathname === '/') {
+    if (!isAuthenticated) {
+      return NextResponse.redirect(new URL('/auth/registro', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // 2. Si autenticado con onboarding completo intenta ir a /auth/* o /onboarding/* → home
+  if (isAuthenticated && onboardingDone && (
+    pathname.startsWith('/auth') || pathname.startsWith('/onboarding')
+  )) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // 3. Proteger /onboarding/* — requiere auth
   if (pathname.startsWith('/onboarding') && !isAuthenticated) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
-    return NextResponse.redirect(url);
-  }
-
-  // Evitar volver al onboarding cuando ya fue completado
-  if (pathname.startsWith('/onboarding') && isAuthenticated && onboardingDone) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
-  }
-
-  // Redirigir usuarios autenticados fuera de las páginas de auth
-  if (pathname.startsWith('/auth') && isAuthenticated) {
-    const url = request.nextUrl.clone();
-    url.pathname = onboardingDone ? '/' : '/onboarding/perfil';
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   return NextResponse.next();

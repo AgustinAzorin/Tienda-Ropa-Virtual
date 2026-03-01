@@ -85,10 +85,7 @@ export class ReviewService {
     dto: CreateReviewDto,
     images: Array<{ buffer: ArrayBuffer }> = [],
   ): Promise<Review> {
-    // Verify order item belongs to this user
-    const [item] = await db.select().from(orderItems).where(eq(orderItems.id, dto.orderItemId)).limit(1);
-    if (!item) throw new NotFoundError('Item de orden');
-
+    // Order item verification is handled by repo.create()
     const review = await this.repo.create(dto);
     if (images.length) {
       await this.repo.addImages(review.id, images.map((img) => ({ ...img, reviewId: review.id })));

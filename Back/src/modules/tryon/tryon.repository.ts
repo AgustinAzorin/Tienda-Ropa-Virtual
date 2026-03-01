@@ -24,7 +24,8 @@ export class TryonRepository implements ITryonRepository {
   async listByUser(userId: string): Promise<TryonSession[]> {
     const rows = await db.select().from(tryonSessions)
       .where(eq(tryonSessions.user_id, userId))
-      .orderBy(sql`${tryonSessions.created_at} DESC`);
+      .orderBy(sql`${tryonSessions.created_at} DESC`)
+      .limit(50);
     return rows as unknown as TryonSession[];
   }
 

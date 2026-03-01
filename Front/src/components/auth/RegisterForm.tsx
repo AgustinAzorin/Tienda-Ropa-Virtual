@@ -1,14 +1,14 @@
 "use client";
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Divider, GoogleButton } from './LoginForm';
+import { saveSession } from '@/lib/auth';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export function RegisterForm() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const [email, setEmail] = useState('');
@@ -26,7 +26,7 @@ export function RegisterForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-        credentials: 'include',
+        credentials: 'include' as RequestCredentials,
       };
       try {
         const res = await fetch(url, opciones);
@@ -41,7 +41,11 @@ export function RegisterForm() {
           }
           return;
         }
-        // ...proceso normal de éxito
+        // El backend retorna { user, tokens } directamente (sin wrapper data:)
+        const { user, tokens } = json;
+        saveSession(user, tokens.accessToken, tokens.refreshToken);
+        document.cookie = 'onboarding_done=0; Path=/; Max-Age=31536000; SameSite=Lax';
+        window.location.replace('/onboarding/perfil');
       } catch (err) {
         setServerError('Error de conexión. Intentá de nuevo.');
       }
@@ -80,12 +84,12 @@ export function RegisterForm() {
       <GoogleButton onClick={() => {}} loading={isPending} />
       <p className="text-center text-sm text-[rgba(245,240,232,0.5)]">
         ¿Ya tenés cuenta?{' '}
-        <a
+        <Link
           href="/auth/login"
           className="text-[#C9A84C] hover:text-[#B8942E] transition-colors font-medium"
         >
           Iniciá sesión
-        </a>
+        </Link>
       </p>
     </form>
   );

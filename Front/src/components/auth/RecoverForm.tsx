@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { z } from 'zod';
 import { Mail } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
@@ -52,12 +53,12 @@ export function RecoverForm() {
             recibirás las instrucciones en breve.
           </p>
         </div>
-        <a
+        <Link
           href="/auth/login"
           className="text-sm text-[#C9A84C] hover:text-[#B8942E] transition-colors"
         >
           Volver al inicio de sesión
-        </a>
+        </Link>
       </div>
     );
   }

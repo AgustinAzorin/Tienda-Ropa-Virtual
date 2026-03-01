@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
 import { saveSession } from '@/lib/auth';
@@ -19,7 +19,6 @@ const schema = z.object({
 type Errors = Partial<Record<keyof z.infer<typeof schema>, string>>;
 
 export function LoginForm() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const [email, setEmail] = useState('');
@@ -52,17 +51,17 @@ export function LoginForm() {
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ email, password }),
         });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
         if (!res.ok) {
           setErrors({ password: json.error?.message ?? 'Email o contraseña incorrectos' });
           return;
         }
-        const { user, tokens } = json.data;
+        // El backend retorna { user, tokens } directamente (sin wrapper data:)
+        const { user, tokens } = json;
         saveSession(user, tokens.accessToken, tokens.refreshToken);
-        document.cookie = 'onboarding_done=0; Path=/; Max-Age=31536000; SameSite=Lax';
-        router.push('/onboarding/perfil');
-        router.refresh();
-      } catch {
+        // Hard redirect para que el middleware re-evalúe las cookies
+        window.location.replace('/onboarding/perfil');
+      } catch (err) {
         setErrors({ password: 'Error de conexión. Intentá de nuevo.' });
       }
     });
@@ -102,12 +101,12 @@ export function LoginForm() {
       />
 
       <div className="flex justify-end">
-        <a
+        <Link
           href="/auth/recuperar"
           className="text-xs text-[rgba(212,97,74,0.8)] hover:text-[#D4614A] transition-colors"
         >
           ¿Olvidaste tu contraseña?
-        </a>
+        </Link>
       </div>
 
       <Button type="submit" className="w-full" loading={isPending}>
@@ -120,12 +119,12 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-[rgba(245,240,232,0.5)]">
         ¿No tenés cuenta?{' '}
-        <a
+        <Link
           href="/auth/registro"
           className="text-[#C9A84C] hover:text-[#B8942E] transition-colors font-medium"
         >
           Registrate
-        </a>
+        </Link>
       </p>
     </form>
   );
@@ -160,7 +159,7 @@ export function GoogleButton({
         'border border-[rgba(255,255,255,0.12)]',
         'bg-[rgba(255,255,255,0.03)]',
         'hover:bg-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.2)]',
-        'transition-all duration-150',
+        'transition-[background-color,border-color] duration-150',
         'flex items-center justify-center gap-3',
         'text-sm font-medium text-[rgba(245,240,232,0.8)]',
         'disabled:opacity-40 disabled:cursor-not-allowed',

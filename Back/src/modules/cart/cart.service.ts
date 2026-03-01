@@ -1,5 +1,8 @@
 import { CartRepository } from './cart.repository';
 import { CatalogRepository } from '@/modules/catalog/catalog.repository';
+import { db } from '@/db/client';
+import { productVariants } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { StockError, NotFoundError } from '@/lib/errors';
 import type { ICartService, CartTotals } from './interfaces/ICartService';
 import type { CartWithItems } from './interfaces/ICartRepository';
@@ -34,12 +37,11 @@ export class CartService implements ICartService {
       const variant = await this.catalog.findVariantBySku(variantId) ?? { sku: variantId };
       throw new StockError(variant.sku ?? variantId);
     }
-    // Fetch current price from the product (variant override or product price)
-    const [variant] = await import('@/db/client').then(({ db }) =>
-      db.select().from((await import('@/db/schema')).productVariants)
-        .where((await import('drizzle-orm')).eq((await import('@/db/schema')).productVariants.id, variantId))
-        .limit(1)
-    );
+    // Fetch current price from the variant
+    const [variant] = await db.select()
+      .from(productVariants)
+      .where(eq(productVariants.id, variantId))
+      .limit(1);
     const unitPrice = Number(variant?.price_override ?? 0);
     await this.repo.addItem(cartId, { variantId, quantity, unitPrice });
     return this.getCart(cartId);

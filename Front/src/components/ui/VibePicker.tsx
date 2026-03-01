@@ -60,7 +60,7 @@ export function VibePicker({ selected, onChange, className }: VibePickerProps) {
               onClick={() => toggle(label)}
               className={cn(
                 'flex items-center gap-2.5 px-3 py-2.5 rounded-[12px]',
-                'border transition-all duration-200 ease-out',
+                'border transition-[border-color,background-color,color] duration-150 ease-out',
                 'text-sm font-body text-left',
                 active
                   ? 'border-[#C9A84C] bg-[rgba(201,168,76,0.12)] text-[#F5F0E8]'

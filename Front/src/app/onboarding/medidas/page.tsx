@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Info } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -21,7 +22,7 @@ interface MannequinProps {
   skinTone: SkinTone | null;
 }
 
-function Mannequin({ height, chest, waist, hips, shoulders, skinTone }: MannequinProps) {
+const Mannequin = memo(function Mannequin({ height, chest, waist, hips, shoulders, skinTone }: MannequinProps) {
   // Normalize values to [0,1] for relative proportions
   const h  = (height    - 140) / (210 - 140); // 0 = 140cm, 1 = 210cm
   const c  = (chest     -  60) / (130 -  60);
@@ -56,7 +57,7 @@ function Mannequin({ height, chest, waist, hips, shoulders, skinTone }: Mannequi
   return (
     <svg
       viewBox={`0 0 160 ${Math.ceil(legBot + 10)}`}
-      className="w-full max-w-[160px] mx-auto transition-all duration-300"
+      className="w-full max-w-[160px] mx-auto"
       fill="none"
       aria-label="Preview del maniquí basado en tus medidas"
       role="img"
@@ -139,7 +140,8 @@ function Mannequin({ height, chest, waist, hips, shoulders, skinTone }: Mannequi
       />
     </svg>
   );
-}
+});
+Mannequin.displayName = 'Mannequin';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -219,12 +221,12 @@ export default function MedidasPage() {
             simular cómo te quedan las prendas. No se comparten con terceros ni se vinculan
             a tu identidad pública.
           </p>
-          <a
+          <Link
             href="/privacidad"
             className="text-xs text-[#C9A84C] hover:text-[#B8942E] transition-colors"
           >
             Ver política completa →
-          </a>
+          </Link>
         </div>
       </div>
 

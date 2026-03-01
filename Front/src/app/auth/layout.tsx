@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Acceder',
@@ -26,12 +27,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       />
 
       {/* Logo */}
-      <a
+      <Link
         href="/"
         className="fixed top-6 left-6 font-display italic text-xl text-[rgba(245,240,232,0.6)] hover:text-[#F5F0E8] transition-colors z-10"
       >
         ANYA
-      </a>
+      </Link>
 
       {/* Content (modal) */}
       <div className="relative z-10 w-full">{children}</div>

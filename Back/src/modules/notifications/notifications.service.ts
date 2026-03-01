@@ -29,7 +29,8 @@ export class NotificationRepository {
     if (onlyUnread) conditions.push(eq(notifications.is_read, false));
     return db.select().from(notifications)
       .where(and(...conditions))
-      .orderBy(sql`${notifications.created_at} DESC`) as Promise<Notification[]>;
+      .orderBy(sql`${notifications.created_at} DESC`)
+      .limit(50) as Promise<Notification[]>;
   }
 
   async markRead(id: string, userId: string): Promise<void> {

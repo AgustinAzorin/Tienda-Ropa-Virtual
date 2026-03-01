@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useTransition, useEffect, useCallback } from 'react';
+import { useState, useTransition, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, X, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
-import { getStoredUser } from '@/lib/auth';
+import { getStoredUser, clearSession } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { debounce } from '@/lib/utils';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -26,13 +26,21 @@ const schema = z.object({
   displayName: z.string().min(1, 'Completá tu nombre').max(50),
 });
 
+// Extracted outside the component: no closure dependency on component state
+function UsernameStatusIcon({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' | 'error' }) {
+  if (status === 'checking')  return <Loader2 size={16} className="text-[rgba(245,240,232,0.4)] animate-spin" />;
+  if (status === 'available') return <Check size={16} className="text-emerald-400" />;
+  if (status === 'taken')     return <X size={16} className="text-[#D4614A]" />;
+  return null;
+}
+
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 
 export default function PerfilPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  // Supabase solo para username check (lectura pública) y avatar storage
-  const supabase = createClient();
+  // Supabase client — stable across renders, never recreated
+  const supabase = useMemo(() => createClient(), []);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [username, setUsername] = useState('');
@@ -42,16 +50,17 @@ export default function PerfilPage() {
   const [errors, setErrors] = useState<Partial<Record<'username' | 'displayName', string>>>({});
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
 
-  // Debounced username check
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const checkUsername = useCallback(
-    debounce(async (val: string) => {
+  // Debounced username check.
+  // The debounce instance is kept in a ref so it is never recreated on re-renders,
+  // which would reset the timer and make rapid keystrokes fire multiple API calls.
+  const checkUsername = useRef(
+    debounce(async (val: string, sb: ReturnType<typeof createClient>) => {
       if (val.length < 3) { setUsernameStatus('idle'); return; }
       const reg = /^[a-z0-9_]+$/;
       if (!reg.test(val)) { setUsernameStatus('idle'); return; }
 
       setUsernameStatus('checking');
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('profiles')
         .select('username')
         .eq('username', val)
@@ -60,12 +69,17 @@ export default function PerfilPage() {
       if (error) { setUsernameStatus('error'); return; }
       setUsernameStatus(data ? 'taken' : 'available');
     }, 500),
-    [supabase],
+  ).current;
+
+  // Stable callback: calls the stable debounced function with the current supabase client
+  const handleUsernameCheck = useCallback(
+    (val: string) => checkUsername(val, supabase),
+    [checkUsername, supabase],
   );
 
   useEffect(() => {
-    checkUsername(username);
-  }, [username, checkUsername]);
+    handleUsernameCheck(username);
+  }, [username, handleUsernameCheck]);
 
   const canContinue =
     username.length >= 3 &&
@@ -74,6 +88,7 @@ export default function PerfilPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const result = schema.safeParse({ username, displayName });
     if (!result.success) {
       const errs: typeof errors = {};
@@ -86,11 +101,16 @@ export default function PerfilPage() {
     }
     setErrors({});
 
-    startTransition(async () => {
-      const user = getStoredUser();
-      if (!user) return;
+    // Verificar sesión ANTES de startTransition
+    const user = getStoredUser();
+    if (!user) {
+      clearSession();
+      window.location.replace('/auth/login');
+      return;
+    }
 
-      // Upload avatar si se proporcionó (usa Supabase Storage — no requiere auth propia)
+    startTransition(async () => {
+      // Upload avatar si se proporcionó
       let avatarUrl: string | undefined;
       if (avatarFile) {
         const ext = avatarFile.name.split('.').pop();
@@ -104,28 +124,25 @@ export default function PerfilPage() {
         }
       }
 
-      // Actualizar perfil via Back API
-      await apiFetch('/api/profile', {
-        method: 'PUT',
-        body:   JSON.stringify({
-          username,
-          display_name: displayName,
-          bio:          bio || null,
-          avatar_url:   avatarUrl ?? null,
-        }),
-      });
-
-      router.push('/onboarding/medidas');
+      try {
+        await apiFetch('/api/profile', {
+          method: 'PUT',
+          body: JSON.stringify({
+            username,
+            display_name: displayName,
+            bio: bio || null,
+            avatar_url: avatarUrl ?? null,
+          }),
+        });
+        router.push('/onboarding/medidas');
+      } catch (error) {
+        console.error('Error al guardar perfil:', error);
+      }
     });
   };
 
   // Username status icon
-  const UsernameIcon = () => {
-    if (usernameStatus === 'checking') return <Loader2 size={16} className="text-[rgba(245,240,232,0.4)] animate-spin" />;
-    if (usernameStatus === 'available') return <Check size={16} className="text-emerald-400" />;
-    if (usernameStatus === 'taken') return <X size={16} className="text-[#D4614A]" />;
-    return null;
-  };
+  // (component defined outside — not recreated on every render)
 
   const bioPercent = bio.length / BIO_MAX;
 
@@ -156,7 +173,7 @@ export default function PerfilPage() {
             errors.username ??
             (usernameStatus === 'taken' ? 'Este nombre de usuario no está disponible' : undefined)
           }
-          suffix={<UsernameIcon />}
+          suffix={<UsernameStatusIcon status={usernameStatus} />}
           hint="Solo letras minúsculas, números y guión bajo"
         />
 

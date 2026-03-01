@@ -40,7 +40,7 @@ export function BodySlider({
 
         {/* Track fill */}
         <div
-          className="absolute left-0 h-0.5 bg-[#C9A84C] rounded-full pointer-events-none transition-all duration-75"
+          className="absolute left-0 h-0.5 bg-[#C9A84C] rounded-full pointer-events-none transition-[width] duration-75"
           style={{ width: `${percent}%` }}
         />
 

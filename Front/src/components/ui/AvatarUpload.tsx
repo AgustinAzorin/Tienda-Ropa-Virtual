@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,9 +16,17 @@ const MAX_SIZE_MB = 5;
 
 export function AvatarUpload({ value, onChange, previewUrl, className }: AvatarUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const blobUrlRef = useRef<string | null>(null); // tracks the active blob URL for cleanup
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Revoke blob URL on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
+  }, []);
 
   const preview = localPreview ?? previewUrl ?? null;
 
@@ -32,7 +40,10 @@ export function AvatarUpload({ value, onChange, previewUrl, className }: AvatarU
       setError(`El archivo supera los ${MAX_SIZE_MB}MB.`);
       return;
     }
+    // Revoke the previous blob URL before creating a new one
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     const url = URL.createObjectURL(file);
+    blobUrlRef.current = url;
     setLocalPreview(url);
     onChange(file);
   }, [onChange]);
@@ -50,7 +61,10 @@ export function AvatarUpload({ value, onChange, previewUrl, className }: AvatarU
   };
 
   const handleRemove = () => {
-    if (localPreview) URL.revokeObjectURL(localPreview);
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
     setLocalPreview(null);
     onChange(null);
     if (inputRef.current) inputRef.current.value = '';

@@ -38,7 +38,7 @@ export function SkinTonePicker({ selected, onChange, className }: SkinTonePicker
               onClick={() => onChange(tone)}
               className={cn(
                 'w-9 h-9 rounded-full',
-                'transition-all duration-150',
+                'transition-[box-shadow,transform] duration-150',
                 'hover:scale-110',
                 isSelected
                   ? 'ring-2 ring-[#C9A84C] ring-offset-2 ring-offset-[#0D0A08] scale-110'

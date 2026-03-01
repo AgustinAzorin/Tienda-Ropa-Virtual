@@ -87,14 +87,15 @@ export class CartRepository implements ICartRepository {
       userCart = { ...created, items: [] };
     }
 
-    for (const item of guestCart.items) {
-      await this.addItem(userCart.id, {
+    // Merge all guest items into user cart in parallel
+    await Promise.all(guestCart.items.map((item) =>
+      this.addItem(userCart.id, {
         variantId:  item.variant_id,
         quantity:   item.quantity,
         unitPrice:  Number(item.unit_price),
         triedOn3d:  item.tried_on_3d,
-      });
-    }
+      })
+    ));
     await this.setStatus(guestCart.id, 'converted');
   }
 }

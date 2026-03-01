@@ -19,7 +19,10 @@ export async function GET(request: NextRequest) {
       per_page:   sp.has('per_page') ? Number(sp.get('per_page')) : 20,
     };
     const products = await catalogService.list(params);
-    return ok(products);
+    const response = ok(products);
+    // Public catalog data — cache for 60s, revalidate in background for 5min
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return response;
   } catch (err) {
     return handleError(err);
   }

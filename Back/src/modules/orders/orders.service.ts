@@ -18,11 +18,11 @@ export class OrderService implements IOrderService {
     const cart = await this.cartRepo.findById(cartId);
     if (!cart || cart.user_id !== userId) throw new ForbiddenError('Carrito inválido');
 
-    // Validate stock for each item
-    for (const item of cart.items) {
+    // Validate stock for all items in parallel
+    await Promise.all(cart.items.map(async (item) => {
       const stock = await this.catalog.getVariantStock(item.variant_id);
       if (stock < item.quantity) throw new AppError('INSUFFICIENT_STOCK', `Stock insuficiente`, 409);
-    }
+    }));
 
     const totalAmount = cart.items.reduce((s, i) => s + Number(i.unit_price) * i.quantity, 0);
 
@@ -38,10 +38,10 @@ export class OrderService implements IOrderService {
     }));
     const insertedItems = await this.repo.addItems(order.id, itemsToInsert as Omit<OrderItem, 'id' | 'order_id'>[]);
 
-    // Decrement stock
-    for (const item of cart.items) {
-      await this.catalog.decrementStock(item.variant_id, item.quantity);
-    }
+    // Decrement stock in parallel
+    await Promise.all(cart.items.map((item) =>
+      this.catalog.decrementStock(item.variant_id, item.quantity)
+    ));
 
     // Mark cart as converted
     await this.cartRepo.setStatus(cartId, 'converted');
