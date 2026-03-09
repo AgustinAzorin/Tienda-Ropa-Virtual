@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const history = await pricingService.getHistory(id);
+    const history = await pricingService.getPriceHistory(id);
     return ok(history);
   } catch (err) {
     return handleError(err);

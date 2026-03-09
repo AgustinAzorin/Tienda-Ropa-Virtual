@@ -12,7 +12,7 @@ export class TryonService implements ITryonService {
     let snapshot = dto.bodyProfileSnapshot;
     if (!snapshot && dto.userId) {
       try {
-        snapshot = await bodyProfileService.snapshot(dto.userId) as unknown;
+        snapshot = await bodyProfileService.snapshot(dto.userId);
       } catch { /* guest or no body profile */ }
     }
     return this.repo.create({ ...dto, bodyProfileSnapshot: snapshot });

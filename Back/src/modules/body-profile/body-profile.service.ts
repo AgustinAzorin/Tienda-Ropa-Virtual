@@ -3,6 +3,7 @@ import { BodyProfileRepository } from './body-profile.repository';
 import type { IBodyProfileService, SuggestedSize } from './interfaces/IBodyProfileService';
 import type { BodyProfile } from '@/models/users/BodyProfile';
 import type { UpsertBodyProfileDto } from './interfaces/IBodyProfileRepository';
+import type { BodyProfileSnapshot } from '@/models/tryon/TryonSession';
 
 // ── Validation constants ──────────────────────────────────────────────────────
 const RANGES: Partial<Record<keyof UpsertBodyProfileDto, [number, number]>> = {
@@ -19,6 +20,12 @@ const RANGES: Partial<Record<keyof UpsertBodyProfileDto, [number, number]>> = {
 export class BodyProfileService implements IBodyProfileService {
   constructor(private readonly repo = new BodyProfileRepository()) {}
 
+  private toOptionalNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
   async getByUserId(userId: string): Promise<BodyProfile> {
     const bp = await this.repo.findByUserId(userId);
     if (!bp) throw new NotFoundError('Perfil corporal');
@@ -28,7 +35,8 @@ export class BodyProfileService implements IBodyProfileService {
   async upsert(userId: string, dto: UpsertBodyProfileDto): Promise<BodyProfile> {
     // Validate ranges
     for (const [field, [min, max]] of Object.entries(RANGES)) {
-      const val = dto[field as keyof UpsertBodyProfileDto] as number | undefined;
+      const raw = dto[field as keyof UpsertBodyProfileDto];
+      const val = this.toOptionalNumber(raw);
       if (val !== undefined && (val < min || val > max)) {
         throw new ValidationError(`${field} debe estar entre ${min} y ${max}`);
       }
@@ -53,20 +61,20 @@ export class BodyProfileService implements IBodyProfileService {
     return { size, confidence: 'approximate', note: 'Basado en contorno de pecho' };
   }
 
-  async snapshot(userId: string): Promise<UpsertBodyProfileDto> {
+  async snapshot(userId: string): Promise<BodyProfileSnapshot> {
     const bp = await this.getByUserId(userId);
     return {
-      height_cm:         bp.height_cm ?? undefined,
-      weight_kg:         bp.weight_kg ?? undefined,
-      chest_cm:          bp.chest_cm ?? undefined,
-      waist_cm:          bp.waist_cm ?? undefined,
-      hips_cm:           bp.hips_cm ?? undefined,
-      shoulder_width_cm: bp.shoulder_width_cm ?? undefined,
-      inseam_cm:         bp.inseam_cm ?? undefined,
-      skin_tone:         bp.skin_tone ?? undefined,
-      muscle_mass_level: bp.muscle_mass_level ?? undefined,
-      age_appearance:    bp.age_appearance ?? undefined,
-      gender_expression: bp.gender_expression ?? undefined,
+      height_cm:         this.toOptionalNumber(bp.height_cm) ?? null,
+      weight_kg:         this.toOptionalNumber(bp.weight_kg) ?? null,
+      chest_cm:          this.toOptionalNumber(bp.chest_cm) ?? null,
+      waist_cm:          this.toOptionalNumber(bp.waist_cm) ?? null,
+      hips_cm:           this.toOptionalNumber(bp.hips_cm) ?? null,
+      shoulder_width_cm: this.toOptionalNumber(bp.shoulder_width_cm) ?? null,
+      inseam_cm:         this.toOptionalNumber(bp.inseam_cm) ?? null,
+      skin_tone:         bp.skin_tone ?? null,
+      muscle_mass_level: this.toOptionalNumber(bp.muscle_mass_level) ?? null,
+      age_appearance:    this.toOptionalNumber(bp.age_appearance) ?? null,
+      gender_expression: bp.gender_expression ?? null,
     };
   }
 

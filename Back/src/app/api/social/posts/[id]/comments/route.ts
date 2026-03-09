@@ -13,9 +13,7 @@ export async function GET(
 ) {
   try {
     const { id }    = await params;
-    const parentId  = request.nextUrl.searchParams.get('parentId') ?? undefined;
-    const cursor    = request.nextUrl.searchParams.get('cursor') ?? undefined;
-    const comments  = await repo.listComments(id, parentId, { cursor });
+    const comments  = await repo.listComments(id);
     return ok(comments);
   } catch (err) {
     return handleError(err);

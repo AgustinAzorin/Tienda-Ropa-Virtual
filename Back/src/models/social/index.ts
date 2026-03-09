@@ -5,3 +5,5 @@ export * from './PostProductTag';
 export * from './Like';
 export * from './Comment';
 export * from './Save';
+export * from './Outfit';
+export * from './OutfitItem';

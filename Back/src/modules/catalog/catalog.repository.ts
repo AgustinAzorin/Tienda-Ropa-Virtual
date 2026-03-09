@@ -55,8 +55,9 @@ export class CatalogRepository implements ICatalogRepository {
 
   async findByCategory(categoryId: string, includeChildren = false): Promise<Product[]> {
     if (!includeChildren) {
-      return db.select().from(products)
-        .where(and(eq(products.category_id, categoryId), eq(products.is_active, true))) as Promise<Product[]>;
+      const rows = await db.select().from(products)
+        .where(and(eq(products.category_id, categoryId), eq(products.is_active, true)));
+      return rows as unknown as Product[];
     }
     // Recursive CTE to get all child category ids
     const childIds = await db.execute<{ id: string }>(sql`
@@ -67,27 +68,30 @@ export class CatalogRepository implements ICatalogRepository {
       )
       SELECT id FROM subtree
     `);
-    const ids = childIds.rows.map((r) => r.id);
-    return db.select().from(products)
-      .where(and(inArray(products.category_id, ids), eq(products.is_active, true))) as Promise<Product[]>;
+    const ids = Array.from(childIds).map((r) => r.id);
+    const rows = await db.select().from(products)
+      .where(and(inArray(products.category_id, ids), eq(products.is_active, true)));
+    return rows as unknown as Product[];
   }
 
   async findByBrand(brandId: string): Promise<Product[]> {
-    return db.select().from(products)
-      .where(and(eq(products.brand_id, brandId), eq(products.is_active, true))) as Promise<Product[]>;
+    const rows = await db.select().from(products)
+      .where(and(eq(products.brand_id, brandId), eq(products.is_active, true)));
+    return rows as unknown as Product[];
   }
 
   async findRelated(productId: string, limit = 8): Promise<Product[]> {
     const [source] = await db.select({ category_id: products.category_id, brand_id: products.brand_id })
       .from(products).where(eq(products.id, productId)).limit(1);
     if (!source) return [];
-    return db.select().from(products)
+    const rows = await db.select().from(products)
       .where(and(
         or(eq(products.category_id, source.category_id), eq(products.brand_id, source.brand_id))!,
         eq(products.is_active, true),
         sql`${products.id} <> ${productId}`,
       ))
-      .limit(limit) as Promise<Product[]>;
+      .limit(limit);
+    return rows as unknown as Product[];
   }
 
   async getVariantStock(variantId: string): Promise<number> {

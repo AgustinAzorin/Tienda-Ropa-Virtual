@@ -12,5 +12,5 @@ export interface Post {
   like_count: number;
   /** Desnormalizado para performance */
   comment_count: number;
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

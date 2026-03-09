@@ -9,11 +9,12 @@ export async function GET(
 ) {
   try {
     const { categoryId } = await params;
-    const include    = request.nextUrl.searchParams.get('includeChildren') === 'true';
     const page       = Number(request.nextUrl.searchParams.get('page') ?? 1);
     const per_page   = Number(request.nextUrl.searchParams.get('per_page') ?? 20);
-    const products   = await catalogService.listByCategory(categoryId, include, { page, per_page });
-    return ok(products);
+    const products   = await catalogService.getByCategory(categoryId);
+    const start = (page - 1) * per_page;
+    const items = products.slice(start, start + per_page);
+    return ok({ items, total: products.length, page, per_page });
   } catch (err) {
     return handleError(err);
   }

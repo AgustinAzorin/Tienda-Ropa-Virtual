@@ -19,7 +19,7 @@ export class FollowRepository {
   async unfollow(followerId: string, followingId: string): Promise<void> {
     const result = await db.delete(follows)
       .where(and(eq(follows.follower_id, followerId), eq(follows.following_id, followingId)));
-    if ((result.rowCount ?? 0) > 0) {
+    if (Array.from(result).length > 0) {
       await Promise.all([
         db.update(profiles).set({ following_count: sql`GREATEST(${profiles.following_count} - 1, 0)` }).where(eq(profiles.id, followerId)),
         db.update(profiles).set({ follower_count:  sql`GREATEST(${profiles.follower_count}  - 1, 0)` }).where(eq(profiles.id, followingId)),
@@ -33,7 +33,7 @@ export class FollowRepository {
       .innerJoin(profiles, eq(profiles.id, follows.follower_id))
       .where(eq(follows.following_id, userId))
       .limit(50);
-    return rows.map((r) => r.profile as Profile);
+    return rows.map((r) => r.profile as unknown as Profile);
   }
 
   async listFollowing(userId: string): Promise<Profile[]> {
@@ -42,7 +42,7 @@ export class FollowRepository {
       .innerJoin(profiles, eq(profiles.id, follows.following_id))
       .where(eq(follows.follower_id, userId))
       .limit(50);
-    return rows.map((r) => r.profile as Profile);
+    return rows.map((r) => r.profile as unknown as Profile);
   }
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {

@@ -11,8 +11,10 @@ export async function GET(
     const { brandId } = await params;
     const page     = Number(request.nextUrl.searchParams.get('page') ?? 1);
     const per_page = Number(request.nextUrl.searchParams.get('per_page') ?? 20);
-    const products = await catalogService.listByBrand(brandId, { page, per_page });
-    return ok(products);
+    const products = await catalogService.getByBrand(brandId);
+    const start = (page - 1) * per_page;
+    const items = products.slice(start, start + per_page);
+    return ok({ items, total: products.length, page, per_page });
   } catch (err) {
     return handleError(err);
   }

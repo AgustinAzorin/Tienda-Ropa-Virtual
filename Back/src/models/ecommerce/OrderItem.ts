@@ -5,5 +5,5 @@ export interface OrderItem {
   /** Snapshot del nombre del producto al momento de la compra */
   product_name: string;
   quantity: number;
-  unit_price: number;
+  unit_price: number | string;
 }

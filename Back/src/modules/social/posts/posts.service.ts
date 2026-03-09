@@ -44,7 +44,7 @@ export class PostService {
   }
 
   async getPersonalizedFeed(userId: string, cursor?: string): Promise<FeedItem[]> {
-    return postRepository.getFeedForUser(userId, cursor);
+    return postRepository.getPersonalizedFeed(userId, { cursor });
   }
 
   async getDiscoveryFeed(): Promise<Post[]> {

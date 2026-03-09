@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     const userId  = await optionalUserId(request);
     const cartId  = request.nextUrl.searchParams.get('cartId') ?? undefined;
-    const cart    = await cartService.getOrCreate(userId ?? undefined, cartId);
+    const cart    = await cartService.getOrCreateCart(userId ?? null, cartId ?? null);
     return ok(cart);
   } catch (err) {
     return handleError(err);

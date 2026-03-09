@@ -16,7 +16,6 @@ export class CartService implements ICartService {
   async getOrCreateCart(userId: string | null, sessionId: string | null): Promise<CartWithItems> {
     if (userId) {
       return (await this.repo.findActiveByUserId(userId))
-          ?? (await this.repo.create(userId, null)).then
           ?? this._create(userId, null);
     }
     if (sessionId) {

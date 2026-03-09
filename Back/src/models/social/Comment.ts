@@ -5,5 +5,5 @@ export interface Comment {
   /** nullable — para replies anidados */
   parent_id: string | null; // uuid FK → comments.id
   body: string;
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

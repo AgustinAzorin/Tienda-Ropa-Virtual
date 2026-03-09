@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { reviews, reviewImages, orderItems } from '@/db/schema';
-import { eq, and, desc, type SQL } from 'drizzle-orm';
+import { eq, and, desc, sql, type SQL } from 'drizzle-orm';
 import { resizeAndUpload } from '@/lib/storage';
 import { NotFoundError, ForbiddenError } from '@/lib/errors';
 import type { Review } from '@/models/reviews/Review';
@@ -60,11 +60,12 @@ export class ReviewRepository {
     const page     = params.page ?? 1;
     const per_page = params.per_page ?? 20;
 
-    return db.select().from(reviews)
+    const rows = await db.select().from(reviews)
       .where(and(...conditions))
       .orderBy(desc(reviews.helpful_count))
       .limit(per_page)
-      .offset((page - 1) * per_page) as Promise<Review[]>;
+      .offset((page - 1) * per_page);
+    return rows as unknown as Review[];
   }
 
   async markHelpful(id: string): Promise<void> {

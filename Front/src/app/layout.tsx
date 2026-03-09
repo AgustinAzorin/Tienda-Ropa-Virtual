@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, DM_Sans, JetBrains_Mono } from 'next/font/google';
+import { AppShell } from '@/components/navigation/AppShell';
+import { TryonServiceWorkerRegister } from '@/components/tryon/TryonServiceWorkerRegister';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -51,7 +53,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="bg-[#0D0A08] text-[#F5F0E8] font-body antialiased">
-        {children}
+        <TryonServiceWorkerRegister />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

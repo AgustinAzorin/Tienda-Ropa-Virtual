@@ -1,4 +1,5 @@
 {
-  "/api/profile/route": "app/api/profile/route.js",
-  "/api/body-profile/route": "app/api/body-profile/route.js"
+  "/api/catalog/products/route": "app/api/catalog/products/route.js",
+  "/api/tryon/sessions/route": "app/api/tryon/sessions/route.js",
+  "/api/cart/route": "app/api/cart/route.js"
 }

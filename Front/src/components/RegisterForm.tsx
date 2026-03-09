@@ -11,7 +11,7 @@ export function RegisterForm() {
     setServerError(null);
     setErrors({});
     const url = 'http://localhost:3001/api/auth?action=register';
-    const opciones = {
+    const opciones: RequestInit = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

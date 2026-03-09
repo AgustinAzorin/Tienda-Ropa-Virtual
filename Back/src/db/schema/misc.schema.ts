@@ -37,6 +37,24 @@ export const tryonSessions = pgTable('tryon_sessions', {
   created_at:            timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ── outfits ──────────────────────────────────────────────────────────────────
+export const outfits = pgTable('outfits', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  user_id:    uuid('user_id').notNull(),
+  name:       text('name').notNull(),
+  is_public:  boolean('is_public').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ── outfit_items ─────────────────────────────────────────────────────────────
+export const outfitItems = pgTable('outfit_items', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  outfit_id:  uuid('outfit_id').notNull().references(() => outfits.id, { onDelete: 'cascade' }),
+  product_id: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  variant_id: uuid('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
+  sort_order: integer('sort_order').notNull().default(0),
+});
+
 // ── notifications ─────────────────────────────────────────────────────────────
 export const notifications = pgTable('notifications', {
   id:             uuid('id').primaryKey().defaultRandom(),

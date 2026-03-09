@@ -7,6 +7,6 @@ export interface ProductVariant {
   sku: string; // UNIQUE
   stock: number;
   /** null = usa el precio del producto padre */
-  price_override: number | null;
+  price_override: number | string | null;
   weight_g: number | null;
 }

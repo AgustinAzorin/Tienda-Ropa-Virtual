@@ -10,5 +10,5 @@ export interface Profile {
   follower_count: number;
   /** Desnormalizado para performance */
   following_count: number;
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

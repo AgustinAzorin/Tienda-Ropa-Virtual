@@ -17,7 +17,7 @@ export class InteractionsRepository {
   async unlike(userId: string, postId: string): Promise<void> {
     const result = await db.delete(likes)
       .where(and(eq(likes.user_id, userId), eq(likes.post_id, postId)));
-    if ((result.rowCount ?? 0) > 0) {
+    if (Array.from(result).length > 0) {
       await db.update(posts).set({ like_count: sql`GREATEST(${posts.like_count} - 1, 0)` }).where(eq(posts.id, postId));
     }
   }

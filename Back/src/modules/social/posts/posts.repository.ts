@@ -29,7 +29,7 @@ export class PostRepository {
       type:       dto.type,
       visibility: dto.visibility,
     }).returning();
-    return row as Post;
+    return row as unknown as Post;
   }
 
   async addImages(postId: string, urls: string[]): Promise<PostImage[]> {
@@ -43,18 +43,23 @@ export class PostRepository {
   async addProductTags(postId: string, tags: Omit<PostProductTag, 'id' | 'post_id'>[]): Promise<void> {
     if (!tags.length) return;
     await db.insert(postProductTags).values(
-      tags.map((t) => ({ post_id: postId, ...t }))
+      tags.map((t) => ({
+        post_id: postId,
+        product_id: t.product_id,
+        x_position: String(t.x_position),
+        y_position: String(t.y_position),
+      }))
     );
   }
 
   async findById(id: string): Promise<Post | null> {
     const [row] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
-    return (row as Post) ?? null;
+    return (row as unknown as Post) ?? null;
   }
 
   async update(id: string, updates: Partial<Pick<Post, 'caption' | 'visibility'>>): Promise<Post> {
     const [row] = await db.update(posts).set(updates).where(eq(posts.id, id)).returning();
-    return row as Post;
+    return row as unknown as Post;
   }
 
   async delete(id: string): Promise<void> {
@@ -62,7 +67,8 @@ export class PostRepository {
   }
 
   /** Personalized feed: posts from followed users, cursor-based pagination. */
-  async getPersonalizedFeed(userId: string, params: { cursor?: string } = {}): Promise<FeedItem[]> {
+  async getPersonalizedFeed(userId: string, params: { cursor?: string; limit?: number } = {}): Promise<FeedItem[]> {
+    const limit = params.limit ?? 20;
     const conditions = [eq(follows.follower_id, userId)];
     if (params.cursor) conditions.push(lt(posts.created_at, new Date(params.cursor)));
 
@@ -76,9 +82,9 @@ export class PostRepository {
     .innerJoin(profiles, eq(profiles.id, posts.user_id))
     .where(and(...conditions))
     .orderBy(sql`${posts.created_at} DESC`)
-    .limit(20);
+    .limit(limit);
 
-    const postIds = rows.map((r) => (r.post as Post).id);
+    const postIds = rows.map((r) => (r.post as unknown as Post).id);
 
     // Batch-load images and product tags in parallel
     const [allImages, allTags] = postIds.length
@@ -95,7 +101,7 @@ export class PostRepository {
     for (const tag of allTags) tagsByPost.set(tag.post_id, [...(tagsByPost.get(tag.post_id) ?? []), tag as PostProductTag]);
 
     return rows.map((r) => {
-      const post = r.post as Post;
+      const post = r.post as unknown as Post;
       return {
         ...post,
         images:      imagesByPost.get(post.id) ?? [],
@@ -106,20 +112,23 @@ export class PostRepository {
   }
 
   async listByUser(userId: string): Promise<Post[]> {
-    return db.select().from(posts)
+    const rows = await db.select().from(posts)
       .where(eq(posts.user_id, userId))
       .orderBy(desc(posts.created_at))
-      .limit(50) as Promise<Post[]>;
+      .limit(50);
+    return rows as unknown as Post[];
   }
 
-  async getDiscoveryFeed(params: { cursor?: string } = {}): Promise<Post[]> {
+  async getDiscoveryFeed(params: { cursor?: string; limit?: number } = {}): Promise<Post[]> {
+    const limit = params.limit ?? 20;
     const conditions = [eq(posts.visibility, 'public')];
     if (params.cursor) conditions.push(lt(posts.created_at, new Date(params.cursor)));
 
-    return db.select().from(posts)
+    const rows = await db.select().from(posts)
       .where(and(...conditions))
       .orderBy(desc(posts.like_count))
-      .limit(20) as Promise<Post[]>;
+      .limit(limit);
+    return rows as unknown as Post[];
   }
 }
 

@@ -1,16 +1,16 @@
 import type { BodyProfile } from '@/models/users/BodyProfile';
 
 export interface UpsertBodyProfileDto {
-  height_cm?:          number;
-  weight_kg?:          number;
-  chest_cm?:           number;
-  waist_cm?:           number;
-  hips_cm?:            number;
-  shoulder_width_cm?:  number;
-  inseam_cm?:          number;
+  height_cm?:          number | string;
+  weight_kg?:          number | string;
+  chest_cm?:           number | string;
+  waist_cm?:           number | string;
+  hips_cm?:            number | string;
+  shoulder_width_cm?:  number | string;
+  inseam_cm?:          number | string;
   skin_tone?:          string;
-  muscle_mass_level?:  number;
-  age_appearance?:     number;
+  muscle_mass_level?:  number | string;
+  age_appearance?:     number | string;
   gender_expression?:  string;
 }
 

@@ -27,10 +27,11 @@ export class NotificationRepository {
   async listForUser(userId: string, onlyUnread = false): Promise<Notification[]> {
     const conditions: SQL<unknown>[] = [eq(notifications.user_id, userId)];
     if (onlyUnread) conditions.push(eq(notifications.is_read, false));
-    return db.select().from(notifications)
+    const rows = await db.select().from(notifications)
       .where(and(...conditions))
       .orderBy(sql`${notifications.created_at} DESC`)
-      .limit(50) as Promise<Notification[]>;
+      .limit(50);
+    return rows as unknown as Notification[];
   }
 
   async markRead(id: string, userId: string): Promise<void> {

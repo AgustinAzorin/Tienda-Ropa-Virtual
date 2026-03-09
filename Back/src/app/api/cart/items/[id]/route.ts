@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server';
 import { cartService } from '@/modules/cart/cart.service';
 import { ok } from '@/lib/response';
-import { handleError } from '@/lib/errors';
+import { handleError, ValidationError } from '@/lib/errors';
 
 export async function PUT(
   request: NextRequest,
@@ -10,7 +10,17 @@ export async function PUT(
   try {
     const { id } = await params;
     const body   = await request.json();
-    const item   = await cartService.updateItemQty(id, body.quantity);
+    const cartId = typeof body?.cartId === 'string' ? body.cartId : '';
+    const quantity = Number(body?.quantity);
+
+    if (!cartId) {
+      throw new ValidationError('cartId es requerido');
+    }
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      throw new ValidationError('quantity debe ser un entero mayor o igual a 0');
+    }
+
+    const item   = await cartService.updateItemQuantity(cartId, id, quantity);
     return ok(item);
   } catch (err) {
     return handleError(err);
@@ -23,7 +33,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await cartService.removeItem(id);
+    const cartId = request.nextUrl.searchParams.get('cartId');
+    if (!cartId) {
+      throw new ValidationError('cartId es requerido como query param');
+    }
+    await cartService.removeItem(cartId, id);
     return new Response(null, { status: 204 });
   } catch (err) {
     return handleError(err);

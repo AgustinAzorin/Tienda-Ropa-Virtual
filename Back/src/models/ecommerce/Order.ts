@@ -4,11 +4,11 @@ export interface Order {
   id: string; // uuid PK
   user_id: string; // uuid FK → users.id
   status: OrderStatus;
-  total_amount: number;
+  total_amount: number | string;
   currency: string;
   /** FK a la tabla normalizada de addresses */
   shipping_address_id: string; // uuid FK → addresses.id
   /** ID externo del pedido en Medusa.js */
   medusa_order_id: string | null;
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

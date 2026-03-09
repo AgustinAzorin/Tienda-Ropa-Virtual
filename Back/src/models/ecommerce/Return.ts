@@ -9,5 +9,5 @@ export interface Return {
   /** Métrica clave: ¿el cliente usó el probador 3D antes de comprar? */
   tried_3d_before_purchase: boolean;
   status: ReturnStatus;
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

@@ -22,5 +22,5 @@ export interface Notification {
   reference_id: string | null; // uuid
   reference_type: NotificationReferenceType | null;
   is_read: boolean; // DEFAULT false
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

@@ -1,19 +1,19 @@
 {
   "pages": {
-    "/api/auth/route": [
+    "/api/catalog/products/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/route.js"
+      "static/chunks/app/api/catalog/products/route.js"
     ],
-    "/api/profile/route": [
+    "/api/tryon/sessions/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/profile/route.js"
+      "static/chunks/app/api/tryon/sessions/route.js"
     ],
-    "/api/body-profile/route": [
+    "/api/cart/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/body-profile/route.js"
+      "static/chunks/app/api/cart/route.js"
     ]
   }
 }

@@ -7,9 +7,8 @@ import { handleError } from '@/lib/errors';
 export async function GET(request: NextRequest) {
   try {
     const userId = await requireUserId(request);
-    const cursor = request.nextUrl.searchParams.get('cursor') ?? undefined;
-    const type   = (request.nextUrl.searchParams.get('type') as 'post' | 'product' | undefined) ?? undefined;
-    const saves  = await interactionsService.listSaves(userId, type, { cursor });
+    const collection = request.nextUrl.searchParams.get('collection') ?? undefined;
+    const saves  = await interactionsService.listSaves(userId, collection);
     return ok(saves);
   } catch (err) {
     return handleError(err);
@@ -30,8 +29,8 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const userId      = await requireUserId(request);
-    const referenceId = request.nextUrl.searchParams.get('referenceId')!;
-    await interactionsService.unsaveItem(userId, referenceId);
+    const saveId = request.nextUrl.searchParams.get('saveId')!;
+    await interactionsService.unsaveItem(saveId, userId);
     return new Response(null, { status: 204 });
   } catch (err) {
     return handleError(err);

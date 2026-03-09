@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { id }  = await params;
-    const price   = await pricingService.getCurrent(id);
+    const price   = await pricingService.getCurrentPrice(id);
     return ok(price);
   } catch (err) {
     return handleError(err);
@@ -26,7 +26,7 @@ export async function POST(
     await requireUserId(request);
     const { id } = await params;
     const body   = await request.json();
-    const price  = await pricingService.setPrice({ productId: id, ...body });
+    const price  = await pricingService.setPrice(id, body);
     return created(price);
   } catch (err) {
     return handleError(err);

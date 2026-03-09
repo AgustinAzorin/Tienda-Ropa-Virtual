@@ -5,12 +5,12 @@ export interface Product {
   name: string;
   slug: string; // UNIQUE
   description: string | null;
-  price: number;
-  compare_at_price: number | null;
+  price: number | string;
+  compare_at_price: number | string | null;
   currency: string; // DEFAULT 'ARS'
   is_active: boolean;
   has_3d_model: boolean;
   tags: string[]; // text[]
   metadata: Record<string, unknown> | null; // jsonb
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

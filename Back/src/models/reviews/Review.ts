@@ -14,5 +14,5 @@ export interface Review {
   /** ¿El usuario usó el probador 3D antes de comprar? */
   used_3d_tryon: boolean;
   helpful_count: number;
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }

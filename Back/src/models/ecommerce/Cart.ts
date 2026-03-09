@@ -8,5 +8,5 @@ export interface Cart {
   status: CartStatus;
   currency: string;
   metadata: Record<string, unknown> | null; // jsonb
-  updated_at: string; // timestamptz
+  updated_at: string | Date; // timestamptz
 }

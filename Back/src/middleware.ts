@@ -12,6 +12,8 @@ const ALLOWED_ORIGINS = [
 const PUBLIC_PATHS = [
   '/api/auth',          // login, register, OAuth y todos los sub-endpoints
   '/api/catalog',
+  '/api/cart',
+  '/api/tryon',
   '/api/social/feed/discovery',
 ];
 

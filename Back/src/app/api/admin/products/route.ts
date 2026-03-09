@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       per_page:   sp.has('per_page') ? Number(sp.get('per_page')) : 50,
     };
     const { catalogService } = await import('@/modules/catalog/catalog.service');
-    return ok(await catalogService.list(params));
+    return ok(await catalogService.listProducts(params));
   } catch (err) {
     return handleError(err);
   }

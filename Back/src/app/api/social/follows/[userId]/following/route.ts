@@ -6,13 +6,12 @@ import { handleError } from '@/lib/errors';
 const repo = new FollowRepository();
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const { userId } = await params;
-    const cursor     = request.nextUrl.searchParams.get('cursor') ?? undefined;
-    const list       = await repo.listFollowing(userId, { cursor });
+    const list       = await repo.listFollowing(userId);
     return ok(list);
   } catch (err) {
     return handleError(err);

@@ -7,5 +7,5 @@ export interface Save {
   /** nullable — guardar post */
   post_id: string | null; // uuid FK → posts.id
   collection_name: string; // DEFAULT 'Guardados'
-  created_at: string; // timestamptz
+  created_at: string | Date; // timestamptz
 }
