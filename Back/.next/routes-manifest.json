@@ -108,20 +108,20 @@
       "namedRegex": "^/api/profile/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
+      "page": "/api/returns/by-order/[orderId]",
+      "regex": "^/api/returns/by\\-order/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPorderId": "nxtPorderId"
+      },
+      "namedRegex": "^/api/returns/by\\-order/(?<nxtPorderId>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/returns/[id]",
       "regex": "^/api/returns/([^/]+?)(?:/)?$",
       "routeKeys": {
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/api/returns/(?<nxtPid>[^/]+?)(?:/)?$"
-    },
-    {
-      "page": "/api/returns/[orderId]",
-      "regex": "^/api/returns/([^/]+?)(?:/)?$",
-      "routeKeys": {
-        "nxtPorderId": "nxtPorderId"
-      },
-      "namedRegex": "^/api/returns/(?<nxtPorderId>[^/]+?)(?:/)?$"
     },
     {
       "page": "/api/reviews/products/[id]",
