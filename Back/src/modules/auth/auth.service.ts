@@ -20,7 +20,7 @@ function sha256(value: string): string {
 const ACCESS_TOKEN_SECS = 15 * 60;          // 15 minutos
 const REFRESH_TOKEN_DAYS = 30;              // 30 días
 
-async function issueTokens(userId: string, email: string, tx: any = db): Promise<AuthTokens> {
+async function issueTokens(userId: string, email: string, tx: typeof db = db): Promise<AuthTokens> {
   const accessToken = await signAccessToken(userId, email);
   const refreshToken = generateRefreshToken();
   const tokenHash = sha256(refreshToken);
@@ -33,13 +33,6 @@ async function issueTokens(userId: string, email: string, tx: any = db): Promise
   });
 
   return { accessToken, refreshToken, expiresIn: ACCESS_TOKEN_SECS };
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('DB_TIMEOUT')), ms))
-  ]);
 }
 
 // ── Servicio ───────────────────────────────────────────────────────────────

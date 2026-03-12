@@ -1,1 +1,209 @@
-{"version":3,"caseSensitive":false,"basePath":"","rewrites":{"beforeFiles":[],"afterFiles":[],"fallback":[]},"redirects":[{"source":"/:path+/","destination":"/:path+","permanent":true,"internal":true,"regex":"^(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))\\/$"}],"headers":[]}
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/cart/items/[id]",
+      "regex": "^/api/cart/items/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/cart/items/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/catalog/brands/[brandId]/products",
+      "regex": "^/api/catalog/brands/([^/]+?)/products(?:/)?$",
+      "routeKeys": {
+        "nxtPbrandId": "nxtPbrandId"
+      },
+      "namedRegex": "^/api/catalog/brands/(?<nxtPbrandId>[^/]+?)/products(?:/)?$"
+    },
+    {
+      "page": "/api/catalog/categories/[categoryId]/products",
+      "regex": "^/api/catalog/categories/([^/]+?)/products(?:/)?$",
+      "routeKeys": {
+        "nxtPcategoryId": "nxtPcategoryId"
+      },
+      "namedRegex": "^/api/catalog/categories/(?<nxtPcategoryId>[^/]+?)/products(?:/)?$"
+    },
+    {
+      "page": "/api/catalog/products/[slug]",
+      "regex": "^/api/catalog/products/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/api/catalog/products/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/catalog/products/[slug]/related",
+      "regex": "^/api/catalog/products/([^/]+?)/related(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/api/catalog/products/(?<nxtPslug>[^/]+?)/related(?:/)?$"
+    },
+    {
+      "page": "/api/orders/[id]",
+      "regex": "^/api/orders/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/orders/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/outfits/[id]",
+      "regex": "^/api/outfits/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/outfits/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/pricing/products/[id]",
+      "regex": "^/api/pricing/products/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/pricing/products/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/pricing/products/[id]/history",
+      "regex": "^/api/pricing/products/([^/]+?)/history(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/pricing/products/(?<nxtPid>[^/]+?)/history(?:/)?$"
+    },
+    {
+      "page": "/api/pricing/products/[id]/installments",
+      "regex": "^/api/pricing/products/([^/]+?)/installments(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/pricing/products/(?<nxtPid>[^/]+?)/installments(?:/)?$"
+    },
+    {
+      "page": "/api/profile/[id]",
+      "regex": "^/api/profile/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/profile/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/returns/[id]",
+      "regex": "^/api/returns/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/returns/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/returns/[orderId]",
+      "regex": "^/api/returns/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPorderId": "nxtPorderId"
+      },
+      "namedRegex": "^/api/returns/(?<nxtPorderId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/reviews/products/[id]",
+      "regex": "^/api/reviews/products/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/reviews/products/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/social/follows/[userId]/followers",
+      "regex": "^/api/social/follows/([^/]+?)/followers(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/api/social/follows/(?<nxtPuserId>[^/]+?)/followers(?:/)?$"
+    },
+    {
+      "page": "/api/social/follows/[userId]/following",
+      "regex": "^/api/social/follows/([^/]+?)/following(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/api/social/follows/(?<nxtPuserId>[^/]+?)/following(?:/)?$"
+    },
+    {
+      "page": "/api/social/posts/by-product/[productId]",
+      "regex": "^/api/social/posts/by\\-product/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPproductId": "nxtPproductId"
+      },
+      "namedRegex": "^/api/social/posts/by\\-product/(?<nxtPproductId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/social/posts/[id]",
+      "regex": "^/api/social/posts/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/social/posts/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/social/posts/[id]/comments",
+      "regex": "^/api/social/posts/([^/]+?)/comments(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/social/posts/(?<nxtPid>[^/]+?)/comments(?:/)?$"
+    },
+    {
+      "page": "/api/social/posts/[id]/likes",
+      "regex": "^/api/social/posts/([^/]+?)/likes(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/social/posts/(?<nxtPid>[^/]+?)/likes(?:/)?$"
+    },
+    {
+      "page": "/api/tryon/sessions/[id]",
+      "regex": "^/api/tryon/sessions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/tryon/sessions/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments"
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

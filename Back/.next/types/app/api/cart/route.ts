@@ -1,4 +1,4 @@
-// File: C:\Users\azori\OneDrive\Documentos\GitHub\Tienda virtual\Tienda-Ropa-Virtual\Back\src\app\api\cart\route.ts
+// File: C:\Users\azori\OneDrive\Documentos\Tienda virtual\Tienda-Ropa-Virtual\Back\src\app\api\cart\route.ts
 import * as entry from '../../../../../src/app/api/cart/route.js'
 import type { NextRequest } from 'next/server.js'
 

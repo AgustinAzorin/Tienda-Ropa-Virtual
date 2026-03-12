@@ -37,7 +37,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  _params?: { params: Promise<{ id: string }> },
+  { params: _params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const userId    = await requireUserId(request);

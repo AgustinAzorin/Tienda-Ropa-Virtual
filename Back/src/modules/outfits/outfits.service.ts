@@ -1,5 +1,6 @@
 import { ValidationError } from '@/lib/errors';
-import { OutfitsRepository, outfitsRepository } from './outfits.repository';
+import type { OutfitsRepository } from './outfits.repository';
+import { outfitsRepository } from './outfits.repository';
 import type { IOutfitsService } from './interfaces/IOutfitsService';
 import type { CreateOutfitDto, OutfitWithItems, UpdateOutfitDto } from './interfaces/IOutfitsRepository';
 

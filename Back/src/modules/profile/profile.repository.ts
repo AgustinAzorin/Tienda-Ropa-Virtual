@@ -51,7 +51,7 @@ export class ProfileRepository implements IProfileRepository {
 
   async update(id: string, dto: UpdateProfileDto): Promise<Profile> {
     // Solo pasa las propiedades que existen en la tabla y en el DTO
-    const updateData: any = {};
+    const updateData: Record<string, string | null | undefined> = {};
     if (dto.display_name !== undefined) updateData.display_name = dto.display_name;
     if (dto.bio !== undefined) updateData.bio = dto.bio;
     if (dto.location !== undefined) updateData.location = dto.location;

@@ -9,9 +9,7 @@ import * as schema from './schema';
 // si no se guarda la referencia en globalThis, lo que genera ECONNRESET.
 
 declare global {
-  // eslint-disable-next-line no-var
   var _pgClient: postgres.Sql | undefined;
-  // eslint-disable-next-line no-var
   var _drizzleDb: PostgresJsDatabase<typeof schema> | undefined;
 }
 
