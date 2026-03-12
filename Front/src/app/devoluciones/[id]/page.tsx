@@ -30,8 +30,8 @@ const demoItems: CartItem[] = [
   },
 ];
 
-export default function DevolucionPage({ params }: { params: Promise<{ ordenId: string }> }) {
-  const { ordenId } = use(params);
+export default function DevolucionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
   const [reason, setReason] = useState('');
@@ -69,7 +69,7 @@ export default function DevolucionPage({ params }: { params: Promise<{ ordenId: 
         <button
           type="button"
           disabled={selected.length === 0 || !reason}
-          onClick={() => router.push(`/orden/${ordenId}`)}
+          onClick={() => router.push(`/orden/${id}`)}
           className="rounded-xl bg-[#D4614A] px-4 py-3 text-sm font-semibold text-[#F5F0E8] disabled:opacity-40"
         >
           Confirmar devolucion
