@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReturnItemSelector } from '@/components/returns/ReturnItemSelector';
 import { ReturnReasonSelector } from '@/components/returns/ReturnReasonSelector';
@@ -30,7 +30,8 @@ const demoItems: CartItem[] = [
   },
 ];
 
-export default function DevolucionPage({ params }: { params: { ordenId: string } }) {
+export default function DevolucionPage({ params }: { params: Promise<{ ordenId: string }> }) {
+  const { ordenId } = use(params);
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
   const [reason, setReason] = useState('');
@@ -68,7 +69,7 @@ export default function DevolucionPage({ params }: { params: { ordenId: string }
         <button
           type="button"
           disabled={selected.length === 0 || !reason}
-          onClick={() => router.push(`/orden/${params.ordenId}`)}
+          onClick={() => router.push(`/orden/${ordenId}`)}
           className="rounded-xl bg-[#D4614A] px-4 py-3 text-sm font-semibold text-[#F5F0E8] disabled:opacity-40"
         >
           Confirmar devolucion

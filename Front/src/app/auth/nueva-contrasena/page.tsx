@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { NewPasswordForm } from '@/components/auth/NewPasswordForm';
 
 export const metadata: Metadata = { title: 'Nueva contraseña' };
@@ -13,7 +14,9 @@ export default function NuevaContrasenaPage() {
             Elegí una contraseña segura para tu cuenta
           </p>
         </div>
-        <NewPasswordForm />
+        <Suspense fallback={<div className="h-32" />}>
+          <NewPasswordForm />
+        </Suspense>
       </div>
     </div>
   );
