@@ -3,6 +3,8 @@ import { authService } from '@/modules/auth/auth.service';
 import { handleError } from '@/lib/errors';
 import { requireUserId } from '@/lib/auth-helpers';
 
+const AUTH_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+
 /** Helper: set auth_session cookie on response */
 function withAuthCookie(response: NextResponse): NextResponse {
   response.cookies.set('auth_session', '1', {
@@ -10,7 +12,7 @@ function withAuthCookie(response: NextResponse): NextResponse {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24,
+    maxAge: AUTH_SESSION_MAX_AGE_SECONDS,
   });
   return response;
 }

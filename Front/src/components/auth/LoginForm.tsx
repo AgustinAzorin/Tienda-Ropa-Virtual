@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
 import { saveSession } from '@/lib/auth';
@@ -20,6 +21,7 @@ type Errors = Partial<Record<keyof z.infer<typeof schema>, string>>;
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,9 +48,12 @@ export function LoginForm() {
 
     startTransition(async () => {
       try {
+        const returnTo = searchParams.get('returnTo');
+        const safeReturnTo = returnTo && returnTo.startsWith('/') ? returnTo : '/';
         const res = await fetch(`${API}/api/auth`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body:    JSON.stringify({ email, password }),
         });
         const json = await res.json().catch(() => ({}));
@@ -60,7 +65,7 @@ export function LoginForm() {
         const { user, tokens } = json;
         saveSession(user, tokens.accessToken, tokens.refreshToken);
         // Hard redirect para que el middleware re-evalúe las cookies
-        window.location.replace('/onboarding/perfil');
+        window.location.replace(safeReturnTo);
       } catch (err) {
         setErrors({ password: 'Error de conexión. Intentá de nuevo.' });
       }

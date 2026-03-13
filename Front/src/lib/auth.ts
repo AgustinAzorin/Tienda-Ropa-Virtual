@@ -13,6 +13,50 @@ export interface StoredUser {
   email: string;
 }
 
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: StoredUser | null;
+}
+
+const authListeners = new Set<() => void>();
+
+function readUserFromStorage(): StoredUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as StoredUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+let authState: AuthState = {
+  isAuthenticated: false,
+  user: null,
+};
+
+function emitAuthChange() {
+  authListeners.forEach((listener) => listener());
+}
+
+function syncAuthStateFromStorage() {
+  const hasToken = !!getAccessToken();
+  authState = {
+    isAuthenticated: hasToken,
+    user: hasToken ? readUserFromStorage() : null,
+  };
+}
+
+if (typeof window !== 'undefined') {
+  syncAuthStateFromStorage();
+  window.addEventListener('storage', (event) => {
+    if (event.key === ACCESS_KEY || event.key === REFRESH_KEY || event.key === USER_KEY) {
+      syncAuthStateFromStorage();
+      emitAuthChange();
+    }
+  });
+}
+
 // ── Persistencia ─────────────────────────────────────────────────────────────
 
 export function saveSession(user: StoredUser, accessToken: string, refreshToken: string) {
@@ -21,6 +65,8 @@ export function saveSession(user: StoredUser, accessToken: string, refreshToken:
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   // Cookie simple (no httpOnly) para que el middleware del Front la lea
   document.cookie = `${COOKIE_NAME}=1; path=/; max-age=${30 * 24 * 3600}; SameSite=Lax`;
+  authState = { isAuthenticated: true, user };
+  emitAuthChange();
 }
 
 export function clearSession() {
@@ -28,6 +74,8 @@ export function clearSession() {
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  authState = { isAuthenticated: false, user: null };
+  emitAuthChange();
 }
 
 export function getAccessToken(): string | null {
@@ -41,17 +89,22 @@ export function getRefreshToken(): string | null {
 }
 
 export function getStoredUser(): StoredUser | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? (JSON.parse(raw) as StoredUser) : null;
-  } catch {
-    return null;
-  }
+  return readUserFromStorage();
 }
 
 export function isAuthenticated(): boolean {
   return !!getAccessToken();
+}
+
+export function getAuthState(): AuthState {
+  return authState;
+}
+
+export function subscribeAuthState(listener: () => void): () => void {
+  authListeners.add(listener);
+  return () => {
+    authListeners.delete(listener);
+  };
 }
 
 // ── Renovación automática de tokens ──────────────────────────────────────────
@@ -71,6 +124,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body:    JSON.stringify({ refreshToken }),
         },
       );

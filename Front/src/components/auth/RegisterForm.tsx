@@ -45,7 +45,7 @@ export function RegisterForm() {
         const { user, tokens } = json;
         saveSession(user, tokens.accessToken, tokens.refreshToken);
         document.cookie = 'onboarding_done=0; Path=/; Max-Age=31536000; SameSite=Lax';
-        window.location.replace('/onboarding/perfil');
+        window.location.replace('/');
       } catch (err) {
         setServerError('Error de conexión. Intentá de nuevo.');
       }

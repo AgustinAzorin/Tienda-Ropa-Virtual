@@ -75,7 +75,8 @@ export function AppShell({ children }: AppShellProps) {
     || pathname.startsWith('/onboarding')
     || pathname.startsWith('/probador')
     || pathname.startsWith('/checkout')
-    || pathname.includes('/confirmacion');
+    || pathname.includes('/confirmacion')
+    || pathname === '/';
 
   if (hideNav) return <>{children}</>;
 

@@ -7,7 +7,7 @@ const ONBOARDING_COOKIE = 'onboarding_done';
  * Middleware del Front.
  *
  * Reglas:
- * 1. `/`                  → si NO autenticado, redirige a /auth/registro
+ * 1. `/`                  → siempre público (preview para invitados y autenticados)
  * 2. `/auth/*`            → accesible siempre (excepto si ya está autenticado + onboarding completo)
  * 3. `/onboarding/*`      → requiere estar autenticado, sino → /auth/login
  * 4. NUNCA redirige automáticamente a /onboarding/perfil desde el middleware
@@ -17,11 +17,8 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = request.cookies.get(COOKIE_NAME)?.value === '1';
   const onboardingDone  = request.cookies.get(ONBOARDING_COOKIE)?.value === '1';
 
-  // 1. Landing `/` → redirigir a registro si no autenticado
+  // 1. Landing `/` es pública para permitir modo invitado de solo lectura
   if (pathname === '/') {
-    if (!isAuthenticated) {
-      return NextResponse.redirect(new URL('/auth/registro', request.url));
-    }
     return NextResponse.next();
   }
 

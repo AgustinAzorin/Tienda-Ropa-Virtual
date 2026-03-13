@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useAuthState } from '@/lib/use-auth-state';
 
 export function LandingNav() {
   const [solid, setSolid] = useState(false);
+  const { isAuthenticated } = useAuthState();
 
   useEffect(() => {
     const handler = () => setSolid(window.scrollY > 48);
@@ -30,30 +32,47 @@ export function LandingNav() {
       </span>
 
       <div className="flex items-center gap-3">
-        <Link
-          href="/auth/login"
-          className={cn(
-            'px-4 h-9 rounded-[8px] text-sm font-medium',
-            'text-[rgba(245,240,232,0.7)] hover:text-[#F5F0E8]',
-            'hover:bg-[rgba(255,255,255,0.06)]',
-            'transition-all duration-150',
-            'inline-flex items-center',
-          )}
-        >
-          Iniciar sesión
-        </Link>
-        <Link
-          href="/auth/registro"
-          className={cn(
-            'px-4 h-9 rounded-[8px] text-sm font-medium',
-            'bg-[#C9A84C] text-[#0D0A08]',
-            'hover:bg-[#B8942E]',
-            'transition-colors duration-150',
-            'inline-flex items-center',
-          )}
-        >
-          Registrarse
-        </Link>
+        {isAuthenticated ? (
+          <Link
+            href="/perfil"
+            className={cn(
+              'px-4 h-9 rounded-[8px] text-sm font-medium',
+              'bg-[#C9A84C] text-[#0D0A08]',
+              'hover:bg-[#B8942E]',
+              'transition-colors duration-150',
+              'inline-flex items-center',
+            )}
+          >
+            Perfil
+          </Link>
+        ) : (
+          <>
+            <Link
+              href="/auth/login"
+              className={cn(
+                'px-4 h-9 rounded-[8px] text-sm font-medium',
+                'text-[rgba(245,240,232,0.7)] hover:text-[#F5F0E8]',
+                'hover:bg-[rgba(255,255,255,0.06)]',
+                'transition-all duration-150',
+                'inline-flex items-center',
+              )}
+            >
+              Iniciar sesión
+            </Link>
+            <Link
+              href="/auth/registro"
+              className={cn(
+                'px-4 h-9 rounded-[8px] text-sm font-medium',
+                'bg-[#C9A84C] text-[#0D0A08]',
+                'hover:bg-[#B8942E]',
+                'transition-colors duration-150',
+                'inline-flex items-center',
+              )}
+            >
+              Registrarse
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );
