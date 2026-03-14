@@ -24,6 +24,7 @@ interface ProductItem {
   name: string;
   has_3d_model: boolean;
   stock?: number;
+  tags?: string[];
 }
 
 interface CatalogoClientProps {
@@ -87,6 +88,14 @@ export function CatalogoClient({ products, total, categories, brands }: Catalogo
   };
 
   const activeOrder = searchParams.get('order') ?? 'mas_probados_3d';
+  const seededMockItems = useMemo(() => {
+    if (products.length === 0) return [];
+    const picks: ProductItem[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      picks.push(products[i % products.length]);
+    }
+    return picks;
+  }, [products]);
 
   return (
     <main className="min-h-dvh bg-[#0D0A08] px-4 pb-24 pt-6 md:px-8">
@@ -113,6 +122,31 @@ export function CatalogoClient({ products, total, categories, brands }: Catalogo
             </button>
           ))}
         </section>
+
+        {seededMockItems.length > 0 ? (
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-2xl italic text-[#F5F0E8]">Mock Picks</h2>
+              <p className="text-xs text-[#F5F0E8]/60">3 items demo con acciones</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {seededMockItems.map((product, index) => (
+                <ProductCard
+                  key={`seeded-${product.id}-${index}`}
+                  product={{
+                    ...product,
+                    brand_name: 'Demo',
+                    average_rating: 4.2,
+                    reviews_count: 10 + index,
+                  }}
+                  categoryTags={['Demo', 'Catalogo']}
+                  showBadge3D
+                  showActions
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="flex items-start gap-4">
           <FilterSidebar
@@ -155,7 +189,9 @@ export function CatalogoClient({ products, total, categories, brands }: Catalogo
                       average_rating: 4.1,
                       reviews_count: 18,
                     }}
+                    categoryTags={product.tags?.length ? product.tags : ['Catalogo']}
                     showBadge3D
+                    showActions
                   />
                 ))}
               </div>

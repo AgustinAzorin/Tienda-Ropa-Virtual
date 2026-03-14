@@ -3,7 +3,7 @@ import { CatalogRepository } from '@/modules/catalog/catalog.repository';
 import { db } from '@/db/client';
 import { productVariants } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { StockError, NotFoundError } from '@/lib/errors';
+import { StockError, NotFoundError, ValidationError } from '@/lib/errors';
 import type { ICartService, CartTotals } from './interfaces/ICartService';
 import type { CartWithItems } from './interfaces/ICartRepository';
 
@@ -30,7 +30,25 @@ export class CartService implements ICartService {
     return { ...cart, items: [] };
   }
 
+  private isUuid(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  }
+
   async addItem(cartId: string, variantId: string, quantity: number): Promise<CartWithItems> {
+    if (!this.isUuid(variantId)) {
+      throw new ValidationError('variantId invalido');
+    }
+
+    let targetCartId = cartId;
+    if (!this.isUuid(targetCartId)) {
+      targetCartId = (await this._create(null, null)).id;
+    } else {
+      const existing = await this.repo.findById(targetCartId);
+      if (!existing) {
+        targetCartId = (await this._create(null, null)).id;
+      }
+    }
+
     const stock = await this.catalog.getVariantStock(variantId);
     if (stock < quantity) {
       const variant = await this.catalog.findVariantBySku(variantId) ?? { sku: variantId };
@@ -42,8 +60,8 @@ export class CartService implements ICartService {
       .where(eq(productVariants.id, variantId))
       .limit(1);
     const unitPrice = Number(variant?.price_override ?? 0);
-    await this.repo.addItem(cartId, { variantId, quantity, unitPrice });
-    return this.getCart(cartId);
+    await this.repo.addItem(targetCartId, { variantId, quantity, unitPrice });
+    return this.getCart(targetCartId);
   }
 
   async updateItemQuantity(_cartId: string, itemId: string, quantity: number): Promise<CartWithItems> {

@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import { ProductGallery } from '@/components/catalog/ProductGallery';
-import { VariantSelector } from '@/components/catalog/VariantSelector';
 import { ReviewCard } from '@/components/catalog/ReviewCard';
 import { UGCGallery } from '@/components/catalog/UGCGallery';
 import { RelatedProducts } from '@/components/catalog/RelatedProducts';
+import { ProductVariantPanelClient } from './ProductVariantPanelClient';
 
 interface Variant {
   id: string;
@@ -87,9 +86,11 @@ export default async function ProductoPage({ params }: { params: Promise<{ slug:
             </p>
           </div>
 
-          <PriceDisplay productId={product.id} variantId={firstVariant?.id} installments={3} />
-
-          <VariantSelector variants={variants} selectedVariantId={firstVariant?.id} onChange={() => {}} />
+          <ProductVariantPanelClient
+            productId={product.id}
+            variants={variants}
+            initialVariantId={firstVariant?.id}
+          />
 
           <div className="rounded-[12px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-4">
             <h3 className="font-display text-2xl italic">Descripcion</h3>

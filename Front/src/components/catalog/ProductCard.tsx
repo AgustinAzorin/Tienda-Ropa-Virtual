@@ -4,7 +4,10 @@ import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { useWishlistStore } from '@/lib/stores/wishlistStore';
+import { useCartStore } from '@/lib/stores/cartStore';
 
 interface ProductImage {
   id?: string;
@@ -35,18 +38,41 @@ interface ProductCardProps {
   product: ProductCardProduct;
   variant?: ProductCardVariant;
   showBadge3D?: boolean;
+  categoryTags?: string[];
+  showActions?: boolean;
   className?: string;
 }
 
 const FALLBACK_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 900'%3E%3Crect width='800' height='900' fill='%23141010'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='40' fill='%23C9A84C' font-family='Arial'%3EProducto%3C/text%3E%3C/svg%3E";
 
-export function ProductCard({ product, variant, showBadge3D = true, className }: ProductCardProps) {
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+export function ProductCard({
+  product,
+  variant,
+  showBadge3D = true,
+  categoryTags,
+  showActions = false,
+  className,
+}: ProductCardProps) {
   const router = useRouter();
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydrateWishlist = useWishlistStore((state) => state.hydrate);
+  const addWishlist = useWishlistStore((state) => state.add);
+  const isSaved = useWishlistStore((state) => state.isSaved(product.id));
+  const addCartItem = useCartStore((state) => state.addItem);
 
   const [flipped, setFlipped] = useState(false);
   const [holding, setHolding] = useState(false);
+  const [isAddingCart, setIsAddingCart] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
+
+  useEffect(() => {
+    hydrateWishlist();
+  }, [hydrateWishlist]);
 
   const rating = product.average_rating ?? 0;
   const reviewsCount = product.reviews_count ?? 0;
@@ -89,6 +115,61 @@ export function ProductCard({ product, variant, showBadge3D = true, className }:
   const onOpenTryOn = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     router.push(`/probador/${product.id}`);
+  };
+
+  const onAddToWishlist = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    addWishlist({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      has_3d_model: product.has_3d_model,
+      stock: product.stock,
+      brand_name: product.brand_name,
+      average_rating: product.average_rating,
+      reviews_count: product.reviews_count,
+      images: product.images,
+      categoryTags,
+    });
+  };
+
+  const onAddToCart = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setCartError(null);
+    setIsAddingCart(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+      const response = await fetch(`${base}/api/catalog/products/${product.slug}`, { cache: 'no-store' });
+      if (!response.ok) {
+        setCartError('No se pudo obtener la variante del producto.');
+        return;
+      }
+
+      const json = await response.json();
+      const variants = (json?.data?.variants ?? []) as Array<{
+        id: string;
+        stock?: number;
+        color?: string;
+        size?: string;
+      }>;
+      const selected = variants.find((item) => (item.stock ?? 0) > 0) ?? variants[0];
+      if (!selected?.id || !isUuid(selected.id)) {
+        setCartError('No hay variante disponible para agregar al carrito.');
+        return;
+      }
+
+      await addCartItem(selected.id, 1, product.has_3d_model, {
+        productName: product.name,
+        thumbnail: product.images?.[0]?.url,
+        color: selected.color ?? undefined,
+        size: selected.size ?? undefined,
+        variantTitle: selected.color ?? selected.size ?? undefined,
+      });
+    } catch {
+      setCartError('No se pudo agregar al carrito. Intentalo de nuevo.');
+    } finally {
+      setIsAddingCart(false);
+    }
   };
 
   return (
@@ -165,6 +246,19 @@ export function ProductCard({ product, variant, showBadge3D = true, className }:
           <h3 className="line-clamp-1 text-base font-medium text-[#F5F0E8]">{product.name}</h3>
         </div>
 
+        {categoryTags?.length ? (
+          <div className="flex flex-wrap gap-1">
+            {categoryTags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[#F5F0E8]/70"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
         <PriceDisplay productId={product.id} variantId={variant?.id} installments={3} />
 
         {reviewsCount > 0 && (
@@ -179,6 +273,30 @@ export function ProductCard({ product, variant, showBadge3D = true, className }:
             <span>{rating.toFixed(1)} ({reviewsCount})</span>
           </div>
         )}
+
+        {showActions ? (
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <Button
+              size="sm"
+              variant={isSaved ? 'secondary' : 'primary'}
+              onClick={onAddToWishlist}
+            >
+              Add to Wishlist
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={isAddingCart}
+              onClick={(event) => void onAddToCart(event)}
+            >
+              Add to Cart
+            </Button>
+          </div>
+        ) : null}
+
+        {cartError ? (
+          <p className="text-xs text-[#D4614A]">{cartError}</p>
+        ) : null}
       </div>
 
       {holding && <span className="sr-only">Manteniendo pulsado</span>}

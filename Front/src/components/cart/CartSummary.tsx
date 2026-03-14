@@ -59,7 +59,7 @@ export function CartSummary({
         onClick={onStartCheckout}
       >
         <Lock size={15} />
-        Iniciar compra
+        Proceed to Payment
       </button>
 
       <p className="mt-3 text-center text-xs text-[#F5F0E8]/55">Compra 100% segura</p>

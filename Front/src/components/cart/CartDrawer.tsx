@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/lib/stores/cartStore';
 import { CartItemRow } from '@/components/cart/CartItemRow';
 import { InstallmentSelector } from '@/components/checkout/InstallmentSelector';
@@ -10,11 +10,13 @@ import { formatPrice } from '@/lib/utils';
 import type { InstallmentQuote } from '@/lib/installments/calculator';
 
 export function CartDrawer() {
+  const router = useRouter();
   const {
     items,
     itemCount,
     subtotal,
     total,
+    initCart,
     isOpen,
     closeCart,
     markDrawerInteracted,
@@ -23,6 +25,10 @@ export function CartDrawer() {
   } = useCartStore();
 
   const [quote, setQuote] = useState<InstallmentQuote | null>(null);
+
+  useEffect(() => {
+    void initCart();
+  }, [initCart]);
 
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
@@ -90,8 +96,26 @@ export function CartDrawer() {
           <p className="font-mono text-2xl font-semibold text-[#F5F0E8]">Total {formatPrice(total)}</p>
           {quote ? <p className="mt-1 font-mono text-xs text-[#F5F0E8]/60">{quote.installments} cuotas de {formatPrice(quote.amountPerInstallment)} · CFT {quote.cft}%</p> : null}
 
-          <Link href="/checkout" className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[#C9A84C] px-4 py-3 text-sm font-semibold text-[#0D0A08] transition hover:bg-[#B8942E]">Ir al checkout</Link>
-          <Link href="/catalogo" className="mt-2 block text-center text-sm text-[#F5F0E8]/55 hover:text-[#F5F0E8]/80">Seguir comprando</Link>
+          <button
+            type="button"
+            onClick={() => {
+              closeCart();
+              router.push('/checkout');
+            }}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[#C9A84C] px-4 py-3 text-sm font-semibold text-[#0D0A08] transition hover:bg-[#B8942E]"
+          >
+            Ir al checkout
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              closeCart();
+              router.push('/catalogo');
+            }}
+            className="mt-2 block w-full text-center text-sm text-[#F5F0E8]/55 hover:text-[#F5F0E8]/80"
+          >
+            Seguir comprando
+          </button>
         </section>
       </aside>
     </>

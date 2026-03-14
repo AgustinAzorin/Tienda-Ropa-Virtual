@@ -1,19 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CartItemRow } from '@/components/cart/CartItemRow';
 import { CartSummary } from '@/components/cart/CartSummary';
 import { EmptyCart } from '@/components/cart/EmptyCart';
 import { UpsellCarousel } from '@/components/cart/UpsellCarousel';
-import { GlassModal } from '@/components/ui/GlassModal';
 import { useCartStore } from '@/lib/stores/cartStore';
-import { isAuthenticated } from '@/lib/auth';
 
 export default function CarritoPage() {
-  const router = useRouter();
   const { items, itemCount, subtotal, total, initCart, updateQuantity, removeItem } = useCartStore();
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [checkoutPressed, setCheckoutPressed] = useState(false);
 
   useEffect(() => {
     void initCart();
@@ -55,26 +51,15 @@ export default function CarritoPage() {
         <CartSummary
           subtotal={subtotal}
           total={total}
-          onStartCheckout={() => {
-            if (!isAuthenticated()) {
-              setShowAuthModal(true);
-              return;
-            }
-            router.push('/checkout/direccion');
-          }}
+          onStartCheckout={() => setCheckoutPressed(true)}
         />
       </div>
 
-      <GlassModal open={showAuthModal} onClose={() => setShowAuthModal(false)} size="sm">
-        <div className="space-y-3">
-          <h2 className="font-display text-2xl italic">Inicia sesion para continuar</h2>
-          <p className="text-sm text-[#F5F0E8]/70">Tu carrito se guarda automaticamente.</p>
-          <div className="flex gap-2">
-            <button className="rounded-xl bg-[#C9A84C] px-4 py-2 text-sm font-semibold text-[#0D0A08]" onClick={() => router.push('/auth/login?returnTo=/checkout/direccion')}>Iniciar sesion</button>
-            <button className="rounded-xl border border-white/15 px-4 py-2 text-sm" onClick={() => router.push('/auth/login?returnTo=/checkout/direccion')}>Continuar al login</button>
-          </div>
-        </div>
-      </GlassModal>
+      {checkoutPressed ? (
+        <p className="mt-4 text-center text-sm text-[#F5F0E8]/60">
+          Proceed to Payment (placeholder)
+        </p>
+      ) : null}
     </main>
   );
 }

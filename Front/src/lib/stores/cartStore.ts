@@ -22,7 +22,18 @@ interface CartStoreState {
   isOpen: boolean;
   hasInteractedWithDrawer: boolean;
   initCart: () => Promise<void>;
-  addItem: (variantId: string, quantity: number, triedOn3D: boolean) => Promise<void>;
+  addItem: (
+    variantId: string,
+    quantity: number,
+    triedOn3D: boolean,
+    meta?: {
+      productName: string;
+      thumbnail?: string;
+      variantTitle?: string;
+      color?: string;
+      size?: string;
+    },
+  ) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   openCart: () => void;
@@ -64,10 +75,10 @@ export const useCartStore = create<CartStoreState>((set, get) => ({
     }
   },
 
-  addItem: async (variantId, quantity, triedOn3D) => {
+  addItem: async (variantId, quantity, triedOn3D, meta) => {
     set({ isLoading: true, isOpen: true, hasInteractedWithDrawer: false });
     try {
-      const snapshot = await addItemAction(variantId, quantity, triedOn3D, get().cartId ?? undefined);
+      const snapshot = await addItemAction(variantId, quantity, triedOn3D, get().cartId ?? undefined, meta);
       set({
         cartId: snapshot.cartId,
         localCartId: snapshot.localCartId,

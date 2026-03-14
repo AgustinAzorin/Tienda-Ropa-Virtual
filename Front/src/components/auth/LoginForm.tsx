@@ -49,7 +49,7 @@ export function LoginForm() {
     startTransition(async () => {
       try {
         const returnTo = searchParams.get('returnTo');
-        const safeReturnTo = returnTo && returnTo.startsWith('/') ? returnTo : '/';
+        const safeReturnTo = returnTo && returnTo.startsWith('/') ? returnTo : '/home';
         const res = await fetch(`${API}/api/auth`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
