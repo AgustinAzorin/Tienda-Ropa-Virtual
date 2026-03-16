@@ -25,6 +25,7 @@ interface ProductItem {
   has_3d_model: boolean;
   stock?: number;
   tags?: string[];
+  price?: number | string;
 }
 
 interface CatalogoClientProps {
@@ -42,6 +43,14 @@ const ORDER_OPTIONS = [
   { value: 'mas_resenas', label: 'Mas resenas' },
 ];
 
+function parseOptionalPrice(input: string | null): number | undefined {
+  if (!input) return undefined;
+  const sanitized = input.replace(/[^\d]/g, '');
+  if (!sanitized) return undefined;
+  const parsed = Number(sanitized);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export function CatalogoClient({ products, total, categories, brands }: CatalogoClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,8 +63,8 @@ export function CatalogoClient({ products, total, categories, brands }: Catalogo
       category: searchParams.get('categoryId') ?? undefined,
       brand: searchParams.get('brandId') ?? undefined,
       has3dModel: searchParams.get('has3dModel') === 'true',
-      minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
-      maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
+      minPrice: parseOptionalPrice(searchParams.get('minPrice')),
+      maxPrice: parseOptionalPrice(searchParams.get('maxPrice')),
     }),
     [searchParams],
   );
@@ -88,14 +97,26 @@ export function CatalogoClient({ products, total, categories, brands }: Catalogo
   };
 
   const activeOrder = searchParams.get('order') ?? 'mas_probados_3d';
+  const demoItems = useMemo(() => products.filter((product) => product.id.startsWith('mock-')), [products]);
+
   const seededMockItems = useMemo(() => {
-    if (products.length === 0) return [];
+    const inRange = demoItems.filter((item) => {
+      const numericPrice = Number(item.price);
+      if (!Number.isFinite(numericPrice)) return true;
+
+      if (filterState.minPrice !== undefined && numericPrice < filterState.minPrice) return false;
+      if (filterState.maxPrice !== undefined && numericPrice > filterState.maxPrice) return false;
+      return true;
+    });
+
+    if (inRange.length === 0) return [];
+
     const picks: ProductItem[] = [];
     for (let i = 0; i < 3; i += 1) {
-      picks.push(products[i % products.length]);
+      picks.push(inRange[i % inRange.length]);
     }
     return picks;
-  }, [products]);
+  }, [demoItems, filterState.maxPrice, filterState.minPrice]);
 
   return (
     <main className="min-h-dvh bg-[#0D0A08] px-4 pb-24 pt-6 md:px-8">

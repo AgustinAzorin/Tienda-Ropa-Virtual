@@ -1,9 +1,7 @@
 {
   "/api/catalog/products/route": "app/api/catalog/products/route.js",
-  "/api/pricing/products/[id]/route": "app/api/pricing/products/[id]/route.js",
-  "/api/pricing/products/[id]/installments/route": "app/api/pricing/products/[id]/installments/route.js",
   "/api/cart/route": "app/api/cart/route.js",
-  "/api/catalog/products/[slug]/route": "app/api/catalog/products/[slug]/route.js",
-  "/api/cart/items/route": "app/api/cart/items/route.js",
-  "/api/cart/items/[id]/route": "app/api/cart/items/[id]/route.js"
+  "/api/auth/refresh/route": "app/api/auth/refresh/route.js",
+  "/api/pricing/products/[id]/route": "app/api/pricing/products/[id]/route.js",
+  "/api/pricing/products/[id]/installments/route": "app/api/pricing/products/[id]/installments/route.js"
 }

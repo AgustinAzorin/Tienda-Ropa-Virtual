@@ -38,6 +38,13 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const update = (patch: Partial<CatalogFilterState>) => onChange({ ...value, ...patch });
 
+  const parsePriceInput = (raw: string) => {
+    const sanitized = raw.replace(/[^\d]/g, '');
+    if (!sanitized) return undefined;
+    const parsed = Number(sanitized);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
   return (
     <aside
       className={cn(
@@ -100,16 +107,20 @@ export function FilterSidebar({
           <h3 className="text-sm font-medium text-[#F5F0E8]/80">Precio</h3>
           <div className="grid grid-cols-2 gap-2">
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={value.minPrice ?? ''}
-              onChange={(e) => update({ minPrice: e.target.value ? Number(e.target.value) : undefined })}
+              onChange={(e) => update({ minPrice: parsePriceInput(e.target.value) })}
               placeholder="Min"
               className="h-10 rounded-[8px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] px-2 text-sm"
             />
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={value.maxPrice ?? ''}
-              onChange={(e) => update({ maxPrice: e.target.value ? Number(e.target.value) : undefined })}
+              onChange={(e) => update({ maxPrice: parsePriceInput(e.target.value) })}
               placeholder="Max"
               className="h-10 rounded-[8px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] px-2 text-sm"
             />

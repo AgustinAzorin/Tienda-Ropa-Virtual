@@ -5,40 +5,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/catalog/products/route.js"
     ],
-    "/api/auth/route": [
+    "/api/cart/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/route.js"
+      "static/chunks/app/api/cart/route.js"
     ],
     "/api/auth/refresh/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/refresh/route.js"
-    ],
-    "/api/profile/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/profile/route.js"
-    ],
-    "/api/body-profile/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/body-profile/route.js"
-    ],
-    "/api/catalog/brands/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/catalog/brands/route.js"
-    ],
-    "/api/catalog/categories/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/catalog/categories/route.js"
-    ],
-    "/api/cart/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/cart/route.js"
     ],
     "/api/pricing/products/[id]/route": [
       "static/chunks/webpack.js",
@@ -49,26 +24,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/pricing/products/[id]/installments/route.js"
-    ],
-    "/api/catalog/products/[slug]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/catalog/products/[slug]/route.js"
-    ],
-    "/api/cart/items/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/cart/items/route.js"
-    ],
-    "/api/catalog/products/[slug]/related/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/catalog/products/[slug]/related/route.js"
-    ],
-    "/api/cart/items/[id]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/cart/items/[id]/route.js"
     ]
   }
 }
